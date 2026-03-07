@@ -33,11 +33,13 @@
 <br>
 
 <div align="center">
-  <img width="390" src="https://github-readme-stats.vercel.app/api?username=RahymFaisalKhan&show_icons=true&theme=transparent&count_private=true" />
-  
-  <img width="390" src="https://streak-stats.demolab.com?user=RahymFaisalKhan&theme=transparent&border_radius=10" />
 
-  <img width="325" src="https://github-readme-stats.vercel.app/api/top-langs/?username=RahymFaisalKhan&layout=compact&theme=transparent&langs_count=8" />
+<img height="165" src="https://github-readme-stats.vercel.app/api?username=RahymFaisalKhan&show_icons=true&theme=transparent&cache_seconds=1800"/>
+
+<img height="165" src="https://streak-stats.demolab.com?user=RahymFaisalKhan&theme=transparent"/>
+
+<img height="165" src="https://github-readme-stats.vercel.app/api/top-langs/?username=RahymFaisalKhan&layout=compact&theme=transparent&cache_seconds=1800"/>
+
 </div>
 
 <hr>
