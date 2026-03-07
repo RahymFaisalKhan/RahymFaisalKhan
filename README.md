@@ -32,10 +32,12 @@
 
 <br>
 
-<div align=center>
-  <img width=390 src="https://github-readme-stats.vercel.app/api?username=RahymFaisalKhan&theme=transparent&count_private=true&show_icons=true&rank_icon=github&locale=en" alt="RahymFaisalKhan's GitHub Stats" />
-  <img width=390 src="https://github-readme-streak-stats.herokuapp.com/?user=RahymFaisalKhan&theme=transparent&count_private=true&border_radius=10&locale=en" alt="RahymFaisalKhan's" />
-  <img width=325 src="https://github-readme-stats.vercel.app/api/top-langs?username=RahymFaisalKhan&theme=transparent&layout=donut&hide=css&langs_count=8&border_radius=10&show_icons=true&locale=en" alt="RahymFaisalKhan's Most Used Languages" />
+<div align="center">
+  <img width="390" src="https://github-readme-stats.vercel.app/api?username=RahymFaisalKhan&show_icons=true&theme=transparent&count_private=true" />
+  
+  <img width="390" src="https://streak-stats.demolab.com?user=RahymFaisalKhan&theme=transparent&border_radius=10" />
+
+  <img width="325" src="https://github-readme-stats.vercel.app/api/top-langs/?username=RahymFaisalKhan&layout=compact&theme=transparent&langs_count=8" />
 </div>
 
 <hr>
