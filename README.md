@@ -1,6 +1,6 @@
-<div align="center"> 
-  <p>Visitor count</p>
-  <img src="https://profile-counter.glitch.me/RahymFaisalKhan/count.svg" alt="Visitor's Count" />
+<div align="center">
+  <h3>Visitor Count</h3>
+  <img src="https://komarev.com/ghpvc/?username=RahymFaisalKhan&label=Profile%20Views&color=0e75b6&style=flat" />
 </div>
 
 
@@ -22,7 +22,7 @@
 <br>
 
 <p align="center">
-  <img src="https://skillicons.dev/icons?i=java,c,python,ts,react,pandas,nodejs,html,css,haskell,git,postman,figma&perline=7" />
+  <img src="https://skillicons.dev/icons?i=java,c,python,ts,react,nodejs,html,css,haskell,git,postman,figma&perline=7" />
 </p>
 
 <hr>
