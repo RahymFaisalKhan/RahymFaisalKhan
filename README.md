@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=35&duration=3000&pause=1000&color=3B82F6&center=true&vCenter=true&width=700&lines=Rahym+Faisal+Khan;Software+Development;AI+%26+Machine+Learning" />
+  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=35&duration=3000&pause=1000&color=3B82F6&center=true&vCenter=true&width=700&lines=Rahym+Faisal+Khan;Software+Development;Data+Science;AI+%26+Machine+Learning" />
 </p>
 
 <div align="center">
@@ -39,7 +39,7 @@
 <img src="https://img.shields.io/badge/Scikit--Learn-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white"/>
 <img src="https://img.shields.io/badge/Seaborn-4C72B0?style=for-the-badge"/>
 
-<br><br>
+<br>
 
 <img src="https://img.shields.io/badge/LangChain-0FA958?style=for-the-badge"/>
 <img src="https://img.shields.io/badge/HuggingFace-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black"/>
