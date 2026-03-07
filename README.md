@@ -1,4 +1,6 @@
-<h1 align="center">Rahym Faisal Khan</h1>
+<p align="center">
+  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=35&duration=3000&pause=1000&color=3B82F6&center=true&vCenter=true&width=700&lines=Taha+Faisal+Khan;Software+Developer;AI+%26+Machine+Learning+Enthusiast" />
+</p>
 
 <div align="center">
   <h3>Visitor Count</h3>
