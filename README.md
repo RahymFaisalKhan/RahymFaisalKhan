@@ -1,3 +1,5 @@
+<h1 align="center">Rahym Faisal Khan</h1>
+
 <div align="center">
   <h3>Visitor Count</h3>
   <img src="https://komarev.com/ghpvc/?username=RahymFaisalKhan&label=Profile%20Views&color=0e75b6&style=flat" />
@@ -17,16 +19,32 @@
 
 <hr>
 
-## 🛠️ Languages and Tools
+## 🛠️ Languages & Tools
 
 <br>
 
 <p align="center">
-  <img src="https://skillicons.dev/icons?i=java,c,python,ts,react,nodejs,html,css,haskell,git,postman,figma&perline=7" />
+<img src="https://skillicons.dev/icons?i=cpp,python,ts,java,cs,js,html,css,react,nodejs,vscode,git,github,docker,pytorch&perline=8" />
+</p>
+
+<br>
+
+<p align="center">
+
+<img src="https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white"/>
+<img src="https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white"/>
+<img src="https://img.shields.io/badge/Matplotlib-11557C?style=for-the-badge&logo=plotly&logoColor=white"/>
+<img src="https://img.shields.io/badge/Scikit--Learn-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white"/>
+<img src="https://img.shields.io/badge/Seaborn-4C72B0?style=for-the-badge"/>
+
+<br><br>
+
+<img src="https://img.shields.io/badge/LangChain-0FA958?style=for-the-badge"/>
+<img src="https://img.shields.io/badge/HuggingFace-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black"/>
+
 </p>
 
 <hr>
-
 
 ## ⚡️ Stats
 
