@@ -42,22 +42,6 @@
 
 <hr>
 
-## ⚡️ Stats
-
-<br>
-
-<div align="center">
-
-<img height="165" src="https://github-readme-stats.vercel.app/api?username=RahymFaisalKhan&show_icons=true&theme=transparent&cache_seconds=1800"/>
-
-<img height="165" src="https://streak-stats.demolab.com?user=RahymFaisalKhan&theme=transparent"/>
-
-<img height="165" src="https://github-readme-stats.vercel.app/api/top-langs/?username=RahymFaisalKhan&layout=compact&theme=transparent&cache_seconds=1800"/>
-
-</div>
-
-<hr>
-
 ## 🐍 My Contributions
 
 <div align="center">
