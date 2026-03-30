@@ -19,7 +19,7 @@
 
 <br>
 
-!-- Frontend -->
+<!-- Frontend -->
 <img src="https://skillicons.dev/icons?i=html,css,js,react" /><br>
 
 <!-- Backend -->
