@@ -19,9 +19,17 @@
 
 <br>
 
-<p align="center">
-<img src="https://skillicons.dev/icons?i=cpp,c,python,ts,java,cs,js,html,css,react,nodejs,vscode,haskell,github,docker,pytorch&perline=8" />
-</p>
+!-- Frontend -->
+<img src="https://skillicons.dev/icons?i=html,css,js,react" /><br>
+
+<!-- Backend -->
+<img src="https://skillicons.dev/icons?i=nodejs,cpp,c,java,cs" /><br>
+
+<!-- ML -->
+<img src="https://skillicons.dev/icons?i=python,pytorch" /><br>
+
+<!-- Other -->
+<img src="https://skillicons.dev/icons?i=ts,haskell,git,github,docker,vscode" />
 
 <br>
 
