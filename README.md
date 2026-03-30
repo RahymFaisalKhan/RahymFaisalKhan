@@ -20,16 +20,16 @@
 <br>
 
 <!-- Frontend -->
-<img src="https://skillicons.dev/icons?i=html,css,js,react" /><br>
+<img src="https://skillicons.dev/icons?i=html,css,js,react&perline=8" /><br>
 
 <!-- Backend -->
-<img src="https://skillicons.dev/icons?i=nodejs,cpp,c,java,cs" /><br>
+<img src="https://skillicons.dev/icons?i=nodejs,cpp,c,java,cs&perline=8" /><br>
 
 <!-- ML -->
-<img src="https://skillicons.dev/icons?i=python,pytorch" /><br>
+<img src="https://skillicons.dev/icons?i=python,pytorch&perline=8" /><br>
 
 <!-- Other -->
-<img src="https://skillicons.dev/icons?i=ts,haskell,git,github,docker,vscode" />
+<img src="https://skillicons.dev/icons?i=ts,haskell,git,github,docker,vscode&perline=8" />
 
 <br>
 
