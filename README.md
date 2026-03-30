@@ -19,17 +19,21 @@
 
 <br>
 
-<!-- Frontend -->
-<img src="https://skillicons.dev/icons?i=html,css,js,react&perline=8" /><br>
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=html,css,js,react" />
+</p>
 
-<!-- Backend -->
-<img src="https://skillicons.dev/icons?i=nodejs,cpp,c,java,cs&perline=8" /><br>
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=nodejs,cpp,c,java,cs" />
+</p>
 
-<!-- ML -->
-<img src="https://skillicons.dev/icons?i=python,pytorch&perline=8" /><br>
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=python,pytorch" />
+</p>
 
-<!-- Other -->
-<img src="https://skillicons.dev/icons?i=ts,haskell,git,github,docker,vscode&perline=8" />
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=ts,haskell,git,github,docker,vscode" />
+</p>
 
 <br>
 
