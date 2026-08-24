@@ -1,11 +1,9 @@
 <p align="center">
-  <p align="center">
-    <img
-      src="./assets/terminal.gif"
-      alt="Rahym Faisal Khan Terminal"
-      width="100%"
-    />
-  </p>
+  <img
+    src="./assets/terminal.gif"
+    alt="Rahym Faisal Khan Terminal"
+    width="100%"
+  />
 </p>
 
 <p align="center">
