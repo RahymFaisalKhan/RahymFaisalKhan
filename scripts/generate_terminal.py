@@ -13,16 +13,39 @@ OUTPUT_FILE = ROOT / "assets" / "terminal.svg"
 WIDTH = 1600
 HEIGHT = 760
 
-ART_X = 42
-ART_Y = 100
-ART_FONT = 7.8
-ART_LINE = 11.2
+# Left pane (ASCII)
+ART_X = 40
+ART_Y = 102
+ART_FONT = 7.6
+ART_LINE = 10.8
+ART_CHAR_W = 4.7
 
+# Right pane (terminal text)
 RIGHT_X = 770
 RIGHT_Y = 118
-RIGHT_LINE = 40
+RIGHT_LINE = 42
+TERM_CHAR_W = 10.9
 
 DIVIDER_X = 736
+
+# =========================================================
+# TIMING
+# Tweak these if you want faster/slower typing
+# =========================================================
+
+BOOT_DELAY = 0.25
+
+# ASCII typing speed
+ASCII_CHAR_DELAY = 0.0014
+ASCII_LINE_PAUSE = 0.010
+
+# Terminal typing speed
+TERM_CHAR_DELAY = 0.014
+TERM_LINE_PAUSE = 0.18
+
+# Start right-side shell after this many seconds.
+# You can lower this if you want the shell to start earlier.
+MIN_SHELL_START = 2.30
 
 # =========================================================
 # EDIT YOUR PROFILE INFO HERE
@@ -31,9 +54,7 @@ DIVIDER_X = 736
 PROFILE = {
     "name": "Rahym Faisal Khan",
     "title": "Software Development | Data Science | AI/ML",
-    "about": (
-        "Building software, exploring data, and learning intelligent systems."
-    ),
+    "about": "Building software, exploring data, and learning intelligent systems.",
     "languages": "Python  C++  C  Java  C#  JavaScript  TypeScript  Haskell",
     "web": "React  Node.js  HTML  CSS",
     "ai_data": "PyTorch  NumPy  Pandas  scikit-learn  LangChain  Hugging Face",
@@ -51,35 +72,90 @@ ascii_lines = ASCII_FILE.read_text(encoding="utf-8").splitlines()
 if not ascii_lines:
     ascii_lines = ["(ascii-art.txt is empty)"]
 
+# Replace tabs if they exist
+ascii_lines = [line.replace("\t", "    ") for line in ascii_lines]
+
 # =========================================================
 # HELPERS
 # =========================================================
 
-def normal_text(x, y, text, css_class="output", delay=None, anchor="start"):
-    animation = f' style="animation-delay:{delay:.2f}s"' if delay is not None else ""
+def svg_char(ch: str) -> str:
+    """Render spaces safely in SVG."""
+    if ch == " ":
+        return "&#160;"
+    return escape(ch)
+
+
+def typed_plain_line(x, y, text, css_class, start_time, char_delay, char_width):
+    """
+    Render a single line character-by-character.
+    Returns: (svg_string, end_time)
+    """
+    pieces = [f'<g class="{css_class}">']
+    t = start_time
+
+    for i, ch in enumerate(text):
+        char_x = x + i * char_width
+        pieces.append(
+            f'''
+            <text x="{char_x:.2f}" y="{y:.2f}" visibility="hidden">
+                {svg_char(ch)}
+                <set attributeName="visibility"
+                     to="visible"
+                     begin="{t:.3f}s"
+                     fill="freeze" />
+            </text>
+            '''
+        )
+        t += char_delay
+
+    pieces.append("</g>")
+    return "\n".join(pieces), t
+
+
+def typed_segment_line(x, y, segments, start_time, char_delay, char_width):
+    """
+    Render a line made of differently styled segments,
+    typed character-by-character from left to right.
+
+    segments: [("text", "css_class"), ...]
+    Returns: (svg_string, end_time)
+    """
+    pieces = []
+    t = start_time
+    cursor_index = 0
+
+    for segment_text, css_class in segments:
+        pieces.append(f'<g class="{css_class}">')
+
+        for ch in segment_text:
+            char_x = x + cursor_index * char_width
+            pieces.append(
+                f'''
+                <text x="{char_x:.2f}" y="{y:.2f}" visibility="hidden">
+                    {svg_char(ch)}
+                    <set attributeName="visibility"
+                         to="visible"
+                         begin="{t:.3f}s"
+                         fill="freeze" />
+                </text>
+                '''
+            )
+            cursor_index += 1
+            t += char_delay
+
+        pieces.append("</g>")
+
+    return "\n".join(pieces), t
+
+
+def static_text(x, y, text, css_class="label", anchor="start"):
     anchor_attr = f' text-anchor="{anchor}"' if anchor != "start" else ""
     return (
-        f'<text x="{x}" y="{y}" class="{css_class} reveal"{anchor_attr}{animation}>'
+        f'<text x="{x}" y="{y}" class="{css_class}"{anchor_attr}>'
         f'{escape(text)}'
         f'</text>'
     )
-
-
-def command_line(y, command, delay):
-    return f"""
-    <text
-        x="{RIGHT_X}"
-        y="{y}"
-        class="reveal"
-        style="animation-delay:{delay:.2f}s"
-    >
-        <tspan class="prompt">rahym@github</tspan>
-        <tspan class="muted">:</tspan>
-        <tspan class="path">~</tspan>
-        <tspan class="muted">$ </tspan>
-        <tspan class="command">{escape(command)}</tspan>
-    </text>
-    """
 
 
 # =========================================================
@@ -97,8 +173,8 @@ svg = [f"""
 >
     <title id="title">Rahym Faisal Khan — Terminal Profile</title>
     <desc id="desc">
-        Terminal themed GitHub profile with ASCII art on the left and
-        profile information rendered as a cinematic shell session on the right.
+        Hacker-themed terminal GitHub profile with ASCII art on the left
+        and a typed shell session on the right.
     </desc>
 
     <defs>
@@ -106,6 +182,14 @@ svg = [f"""
             <rect width="4" height="2" fill="rgba(255,255,255,0.02)" />
             <rect y="2" width="4" height="2" fill="rgba(0,0,0,0.00)" />
         </pattern>
+
+        <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="1.2" result="blur"/>
+            <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
     </defs>
 
     <style>
@@ -155,7 +239,7 @@ svg = [f"""
                 Menlo,
                 monospace;
             font-size: {ART_FONT}px;
-            white-space: pre;
+            filter: url(#softGlow);
         }}
 
         .label {{
@@ -178,6 +262,7 @@ svg = [f"""
                 "Liberation Mono",
                 Menlo,
                 monospace;
+            filter: url(#softGlow);
         }}
 
         .path {{
@@ -222,6 +307,7 @@ svg = [f"""
                 "Liberation Mono",
                 Menlo,
                 monospace;
+            filter: url(#softGlow);
         }}
 
         .cyan {{
@@ -246,32 +332,16 @@ svg = [f"""
                 monospace;
         }}
 
-        .reveal {{
-            opacity: 0;
-            animation: reveal 0.12s linear forwards;
-        }}
-
         .cursor {{
             fill: #39d353;
-            animation: blink 1s steps(1) infinite;
-        }}
-
-        @keyframes reveal {{
-            from {{
-                opacity: 0;
-            }}
-            to {{
-                opacity: 1;
-            }}
-        }}
-
-        @keyframes blink {{
-            0%, 48% {{
-                opacity: 1;
-            }}
-            49%, 100% {{
-                opacity: 0;
-            }}
+            font:
+                700 20px
+                "SFMono-Regular",
+                Consolas,
+                "Liberation Mono",
+                Menlo,
+                monospace;
+            filter: url(#softGlow);
         }}
     </style>
 
@@ -291,9 +361,7 @@ svg = [f"""
     <circle cx="80" cy="33" r="7" fill="#27c93f" />
 
     <!-- WINDOW TITLE -->
-    <text x="{WIDTH / 2}" y="38" text-anchor="middle" class="muted">
-        rahym@github: ~/profile
-    </text>
+    {static_text(WIDTH / 2, 38, "rahym@github: ~/profile", "muted", "middle")}
 
     <!-- INNER PANES -->
     <rect class="pane-left"  x="24"  y="56" width="696" height="680" rx="10" />
@@ -303,139 +371,230 @@ svg = [f"""
     <line x1="{DIVIDER_X}" y1="55" x2="{DIVIDER_X}" y2="736" class="divider" />
 
     <!-- PANE LABELS -->
-    <text x="40" y="76" class="label">[ ./ascii-art.txt ]</text>
-    <text x="770" y="76" class="label">[ interactive shell // guest session ]</text>
+    {static_text(40, 76, "[ ./ascii-art.txt ]", "label")}
+    {static_text(770, 76, "[ interactive shell // guest session ]", "label")}
 """]
 
 # =========================================================
-# ASCII ART REVEAL (line by line, movie style)
+# TYPE THE ASCII ART
 # =========================================================
+
+ascii_time = BOOT_DELAY
 
 for index, line in enumerate(ascii_lines):
     y = ART_Y + index * ART_LINE
-    delay = 0.10 + index * 0.055
-
-    svg.append(
-        f"""
-        <text
-            x="{ART_X}"
-            y="{y:.1f}"
-            class="ascii reveal"
-            xml:space="preserve"
-            style="animation-delay:{delay:.3f}s"
-        >{escape(line)}</text>
-        """
+    line_svg, ascii_time = typed_plain_line(
+        ART_X,
+        y,
+        line,
+        "ascii",
+        ascii_time,
+        ASCII_CHAR_DELAY,
+        ART_CHAR_W,
     )
+    svg.append(line_svg)
+    ascii_time += ASCII_LINE_PAUSE
 
 # =========================================================
-# RIGHT-SIDE SHELL CONTENT
-# Starts after the art has begun to reveal
+# TYPE THE RIGHT-SIDE TERMINAL
 # =========================================================
 
+t = max(MIN_SHELL_START, ascii_time + 0.18)
 y = RIGHT_Y
-delay = 2.40
 
-# WHOAMI
-svg.append(command_line(y, "whoami", delay))
+# 1) whoami
+line_svg, t = typed_segment_line(
+    RIGHT_X, y,
+    [
+        ("rahym@github", "prompt"),
+        (":", "muted"),
+        ("~", "path"),
+        ("$ ", "muted"),
+        ("whoami", "command"),
+    ],
+    t,
+    TERM_CHAR_DELAY,
+    TERM_CHAR_W,
+)
+svg.append(line_svg)
+t += TERM_LINE_PAUSE
 y += RIGHT_LINE
-delay += 0.28
 
-svg.append(normal_text(RIGHT_X, y, PROFILE["name"], "accent", delay))
+line_svg, t = typed_plain_line(
+    RIGHT_X, y,
+    PROFILE["name"],
+    "accent",
+    t,
+    TERM_CHAR_DELAY,
+    TERM_CHAR_W,
+)
+svg.append(line_svg)
+t += TERM_LINE_PAUSE * 0.75
 y += 28
-delay += 0.18
 
-svg.append(normal_text(RIGHT_X, y, PROFILE["title"], "cyan", delay))
+line_svg, t = typed_plain_line(
+    RIGHT_X, y,
+    PROFILE["title"],
+    "cyan",
+    t,
+    TERM_CHAR_DELAY,
+    TERM_CHAR_W,
+)
+svg.append(line_svg)
+t += TERM_LINE_PAUSE * 1.2
 y += 50
-delay += 0.28
 
-# ABOUT
-svg.append(command_line(y, "cat about.txt", delay))
+# 2) about
+line_svg, t = typed_segment_line(
+    RIGHT_X, y,
+    [
+        ("rahym@github", "prompt"),
+        (":", "muted"),
+        ("~", "path"),
+        ("$ ", "muted"),
+        ("cat about.txt", "command"),
+    ],
+    t,
+    TERM_CHAR_DELAY,
+    TERM_CHAR_W,
+)
+svg.append(line_svg)
+t += TERM_LINE_PAUSE
 y += RIGHT_LINE
-delay += 0.28
 
-svg.append(normal_text(RIGHT_X, y, PROFILE["about"], "output", delay))
+line_svg, t = typed_plain_line(
+    RIGHT_X, y,
+    PROFILE["about"],
+    "output",
+    t,
+    TERM_CHAR_DELAY,
+    TERM_CHAR_W,
+)
+svg.append(line_svg)
+t += TERM_LINE_PAUSE * 1.2
 y += 52
-delay += 0.28
 
-# STACK
-svg.append(command_line(y, "./stack --list", delay))
+# 3) stack
+line_svg, t = typed_segment_line(
+    RIGHT_X, y,
+    [
+        ("rahym@github", "prompt"),
+        (":", "muted"),
+        ("~", "path"),
+        ("$ ", "muted"),
+        ("./stack --list", "command"),
+    ],
+    t,
+    TERM_CHAR_DELAY,
+    TERM_CHAR_W,
+)
+svg.append(line_svg)
+t += TERM_LINE_PAUSE
 y += RIGHT_LINE
-delay += 0.28
 
-stack = [
-    ("languages", PROFILE["languages"]),
-    ("web      ", PROFILE["web"]),
-    ("ai/data  ", PROFILE["ai_data"]),
-    ("tools    ", PROFILE["tools"]),
+stack_lines = [
+    (f"[+] languages  {PROFILE['languages']}", [("[+] languages", "accent"), ("  " + PROFILE["languages"], "output")]),
+    (f"[+] web        {PROFILE['web']}", [("[+] web", "accent"), ("        " + PROFILE["web"], "output")]),
+    (f"[+] ai/data    {PROFILE['ai_data']}", [("[+] ai/data", "accent"), ("    " + PROFILE["ai_data"], "output")]),
+    (f"[+] tools      {PROFILE['tools']}", [("[+] tools", "accent"), ("      " + PROFILE["tools"], "output")]),
 ]
 
-for label, value in stack:
-    svg.append(
-        f"""
-        <text
-            x="{RIGHT_X}"
-            y="{y}"
-            class="reveal"
-            style="animation-delay:{delay:.2f}s"
-        >
-            <tspan class="accent">[+] {escape(label)}</tspan>
-            <tspan class="output">  {escape(value)}</tspan>
-        </text>
-        """
+for _, segments in stack_lines:
+    line_svg, t = typed_segment_line(
+        RIGHT_X, y,
+        segments,
+        t,
+        TERM_CHAR_DELAY,
+        TERM_CHAR_W,
     )
+    svg.append(line_svg)
+    t += TERM_LINE_PAUSE * 0.65
     y += 32
-    delay += 0.18
 
-# CONTACT
 y += 14
+t += 0.08
 
-svg.append(command_line(y, "./contact --show", delay))
+# 4) contact
+line_svg, t = typed_segment_line(
+    RIGHT_X, y,
+    [
+        ("rahym@github", "prompt"),
+        (":", "muted"),
+        ("~", "path"),
+        ("$ ", "muted"),
+        ("./contact --show", "command"),
+    ],
+    t,
+    TERM_CHAR_DELAY,
+    TERM_CHAR_W,
+)
+svg.append(line_svg)
+t += TERM_LINE_PAUSE
 y += RIGHT_LINE
-delay += 0.28
 
-svg.append(
-    normal_text(
-        RIGHT_X,
-        y,
-        f"mail     {PROFILE['email']}",
-        "output",
-        delay
-    )
+line_svg, t = typed_plain_line(
+    RIGHT_X, y,
+    f"mail     {PROFILE['email']}",
+    "output",
+    t,
+    TERM_CHAR_DELAY,
+    TERM_CHAR_W,
 )
+svg.append(line_svg)
+t += TERM_LINE_PAUSE * 0.70
 y += 32
-delay += 0.18
 
-svg.append(
-    normal_text(
-        RIGHT_X,
-        y,
-        f"linkedin {PROFILE['linkedin']}",
-        "output",
-        delay
-    )
+line_svg, t = typed_plain_line(
+    RIGHT_X, y,
+    f"linkedin {PROFILE['linkedin']}",
+    "output",
+    t,
+    TERM_CHAR_DELAY,
+    TERM_CHAR_W,
 )
+svg.append(line_svg)
+t += TERM_LINE_PAUSE
 y += 52
-delay += 0.20
 
-# FINAL CURSOR
+# 5) final prompt
+line_svg, t = typed_segment_line(
+    RIGHT_X, y,
+    [
+        ("rahym@github", "prompt"),
+        (":", "muted"),
+        ("~", "path"),
+        ("$ ", "muted"),
+    ],
+    t,
+    TERM_CHAR_DELAY,
+    TERM_CHAR_W,
+)
+svg.append(line_svg)
+
+cursor_x = RIGHT_X + len("rahym@github:~$ ") * TERM_CHAR_W
+
 svg.append(
     f"""
-    <text
-        x="{RIGHT_X}"
-        y="{y}"
-        class="reveal"
-        style="animation-delay:{delay:.2f}s"
-    >
-        <tspan class="prompt">rahym@github</tspan>
-        <tspan class="muted">:</tspan>
-        <tspan class="path">~</tspan>
-        <tspan class="muted">$ </tspan>
-        <tspan class="cursor">█</tspan>
+    <text x="{cursor_x:.2f}" y="{y:.2f}" class="cursor" visibility="hidden">
+        █
+        <set attributeName="visibility"
+             to="visible"
+             begin="{t:.3f}s"
+             fill="freeze" />
+        <animate attributeName="opacity"
+                 values="1;1;0;0;1"
+                 keyTimes="0;0.48;0.49;1;1"
+                 dur="1s"
+                 repeatCount="indefinite"
+                 begin="{t:.3f}s" />
     </text>
     """
 )
 
+# =========================================================
 # SCANLINE OVERLAY
+# =========================================================
+
 svg.append(
     """
     <rect class="scan" x="24" y="56" width="1540" height="680" rx="10" />
