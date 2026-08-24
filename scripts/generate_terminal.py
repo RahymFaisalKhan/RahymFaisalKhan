@@ -1,6 +1,7 @@
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 import math
+import re
 
 # =========================================================
 # PATHS
@@ -13,17 +14,16 @@ OUTPUT_FILE = ROOT / "assets" / "terminal.gif"
 
 # =========================================================
 # CANVAS
-# Smaller width so GitHub scales it up more in the README
 # =========================================================
 
 WIDTH = 1350
-HEIGHT = 740
+HEIGHT = 820
 
 FPS = 18
 FRAME_MS = round(1000 / FPS)
 
 # =========================================================
-# ANIMATION SPEED
+# ANIMATION
 # =========================================================
 
 ASCII_START = 0.35
@@ -31,11 +31,11 @@ ASCII_CPS = 52.0
 ASCII_LINE_STAGGER = 0.045
 
 TERM_COMMAND_CPS = 34.0
-TERM_OUTPUT_CPS = 58.0
+TERM_OUTPUT_CPS = 56.0
 WELCOME_CPS = 30.0
 
 TERM_LINE_PAUSE = 0.08
-TERM_SECTION_PAUSE = 0.18
+TERM_SECTION_PAUSE = 0.20
 
 FINAL_HOLD = 2.5
 
@@ -44,37 +44,60 @@ FINAL_HOLD = 2.5
 # =========================================================
 
 ART_X = 34
-ART_Y = 98
+ART_Y = 100
 ART_LINE_H = 11
 
 RIGHT_X = 658
-TERM_START_Y = 108
-TERM_LINE_STEP = 29
-TERM_BLOCK_GAP = 36
+TERM_START_Y = 112
 
-# Outer terminal geometry
+# Vertical spacing between wrapped lines
+TERM_LINE_STEP = 31
+
+# Extra vertical gap after sections
+TERM_SECTION_GAP = 12
+
+# Main terminal geometry
 OUTER_LEFT = 10
 OUTER_TOP = 10
-OUTER_RIGHT = 1340
-OUTER_BOTTOM = 730
+OUTER_RIGHT = WIDTH - 10
+OUTER_BOTTOM = HEIGHT - 10
 
 TITLE_LEFT = 11
 TITLE_TOP = 11
-TITLE_RIGHT = 1339
+TITLE_RIGHT = WIDTH - 11
 TITLE_BOTTOM = 55
 
-LEFT_PANE = (24, 56, 610, 716)
-RIGHT_PANE = (638, 56, 1324, 716)
+LEFT_PANE = (
+    24,
+    56,
+    610,
+    HEIGHT - 24,
+)
+
+RIGHT_PANE = (
+    638,
+    56,
+    WIDTH - 26,
+    HEIGHT - 24,
+)
 
 DIVIDER_X = 624
 DIVIDER_TOP = 55
-DIVIDER_BOTTOM = 716
+DIVIDER_BOTTOM = HEIGHT - 24
 
 LEFT_LABEL_X = 34
 RIGHT_LABEL_X = 658
 LABEL_Y = 70
 
-TERM_WRAP_WIDTH = RIGHT_PANE[2] - RIGHT_X - 18
+# IMPORTANT:
+# Everything on the right must fit inside this width.
+RIGHT_PADDING = 24
+
+TERM_MAX_WIDTH = (
+    RIGHT_PANE[2]
+    - RIGHT_X
+    - RIGHT_PADDING
+)
 
 # =========================================================
 # PROFILE
@@ -82,14 +105,41 @@ TERM_WRAP_WIDTH = RIGHT_PANE[2] - RIGHT_X - 18
 
 PROFILE = {
     "name": "Rahym Faisal Khan",
-    "title": "Software Development | Data Science | AI/ML",
-    "about": "Building software, exploring data, and learning intelligent systems.",
-    "languages": "Python  C++  C  Java  C#  JavaScript  TypeScript  Haskell",
-    "web": "React  Node.js  HTML  CSS",
-    "ai_data": "PyTorch  NumPy  Pandas  scikit-learn  LangChain  Hugging Face",
-    "tools": "Git  GitHub  Docker  VS Code",
-    "email": "rahymfaisal123@gmail.com",
-    "linkedin": "linkedin.com/in/rahym-faisal-633a6b2b4",
+
+    "title": (
+        "Software Development | Data Science | AI/ML"
+    ),
+
+    "about": (
+        "Building software, exploring data, "
+        "and learning intelligent systems."
+    ),
+
+    "languages": (
+        "Python C++ C Java C# JavaScript "
+        "TypeScript Haskell"
+    ),
+
+    "web": (
+        "React Node.js HTML CSS"
+    ),
+
+    "ai_data": (
+        "PyTorch NumPy Pandas scikit-learn "
+        "LangChain Hugging Face"
+    ),
+
+    "tools": (
+        "Git GitHub Docker VS Code"
+    ),
+
+    "email": (
+        "rahymfaisal123@gmail.com"
+    ),
+
+    "linkedin": (
+        "linkedin.com/in/rahym-faisal-633a6b2b4"
+    ),
 }
 
 # =========================================================
@@ -117,21 +167,21 @@ YELLOW = "#ffbd2e"
 WINDOW_GREEN = "#27c93f"
 
 # =========================================================
-# LOAD FONTS
+# FONTS
 # =========================================================
 
 def load_font(size, bold=False):
-    candidates = []
 
     if bold:
-        candidates += [
+        candidates = [
             "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
             "/usr/share/fonts/truetype/liberation2/LiberationMono-Bold.ttf",
             "/System/Library/Fonts/Monaco.ttf",
             "C:/Windows/Fonts/consolab.ttf",
         ]
+
     else:
-        candidates += [
+        candidates = [
             "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
             "/usr/share/fonts/truetype/liberation2/LiberationMono-Regular.ttf",
             "/System/Library/Fonts/Monaco.ttf",
@@ -140,23 +190,62 @@ def load_font(size, bold=False):
 
     for path in candidates:
         try:
-            return ImageFont.truetype(path, size)
+            return ImageFont.truetype(
+                path,
+                size
+            )
         except Exception:
             pass
 
     return ImageFont.load_default()
 
 
+# Left ASCII
 ASCII_FONT = load_font(10)
 
-TERM_FONT = load_font(19)
-TERM_BOLD = load_font(19, bold=True)
+# Bigger right-side text
+TERM_FONT = load_font(20)
+TERM_BOLD = load_font(
+    20,
+    bold=True
+)
 
-LABEL_FONT = load_font(16, bold=True)
+LABEL_FONT = load_font(
+    16,
+    bold=True
+)
+
 TITLE_FONT = load_font(15)
 
 # =========================================================
-# LOAD ASCII ART
+# MEASUREMENT
+# =========================================================
+
+MEASURE_IMAGE = Image.new(
+    "RGB",
+    (10, 10),
+    BG
+)
+
+MEASURE_DRAW = ImageDraw.Draw(
+    MEASURE_IMAGE
+)
+
+
+def get_font(bold):
+    return TERM_BOLD if bold else TERM_FONT
+
+
+def pixel_width(text, bold=False):
+
+    return MEASURE_DRAW.textlength(
+        text,
+        font=get_font(bold)
+    )
+
+
+# =========================================================
+# ASCII ART
 # =========================================================
 
 ascii_lines = ASCII_FILE.read_text(
@@ -167,38 +256,73 @@ ascii_lines = ASCII_FILE.read_text(
 ).splitlines()
 
 if not ascii_lines:
-    ascii_lines = ["(ascii-art.txt is empty)"]
+
+    ascii_lines = [
+        "(ascii-art.txt is empty)"
+    ]
 
 # =========================================================
-# STATIC TERMINAL BACKGROUND
+# TERMINAL BACKGROUND
 # =========================================================
 
 def make_base():
-    image = Image.new("RGB", (WIDTH, HEIGHT), BG)
-    draw = ImageDraw.Draw(image)
 
+    image = Image.new(
+        "RGB",
+        (WIDTH, HEIGHT),
+        BG
+    )
+
+    draw = ImageDraw.Draw(
+        image
+    )
+
+    # -----------------------------------------------------
     # OUTER TERMINAL
+    # -----------------------------------------------------
+
     draw.rounded_rectangle(
-        (OUTER_LEFT, OUTER_TOP, OUTER_RIGHT, OUTER_BOTTOM),
+        (
+            OUTER_LEFT,
+            OUTER_TOP,
+            OUTER_RIGHT,
+            OUTER_BOTTOM
+        ),
         radius=18,
         fill=PANEL,
         outline=BORDER,
         width=2
     )
 
+    # -----------------------------------------------------
     # TITLE BAR
+    # -----------------------------------------------------
+
     draw.rounded_rectangle(
-        (TITLE_LEFT, TITLE_TOP, TITLE_RIGHT, TITLE_BOTTOM),
+        (
+            TITLE_LEFT,
+            TITLE_TOP,
+            TITLE_RIGHT,
+            TITLE_BOTTOM
+        ),
         radius=16,
         fill=TOP_BAR
     )
 
     draw.rectangle(
-        (TITLE_LEFT, 38, TITLE_RIGHT, TITLE_BOTTOM),
+        (
+            TITLE_LEFT,
+            38,
+            TITLE_RIGHT,
+            TITLE_BOTTOM
+        ),
         fill=TOP_BAR
     )
 
+    # -----------------------------------------------------
     # WINDOW BUTTONS
+    # -----------------------------------------------------
+
     buttons = [
         (34, RED),
         (57, YELLOW),
@@ -206,53 +330,92 @@ def make_base():
     ]
 
     for x, color in buttons:
+
         draw.ellipse(
-            (x - 7, 33 - 7, x + 7, 33 + 7),
+            (
+                x - 7,
+                26,
+                x + 7,
+                40
+            ),
             fill=color
         )
 
+    # -----------------------------------------------------
     # WINDOW TITLE
+    # -----------------------------------------------------
+
     title = "rahym@github: ~/profile"
-    title_width = draw.textlength(title, font=TITLE_FONT)
+
+    title_width = draw.textlength(
+        title,
+        font=TITLE_FONT
+    )
 
     draw.text(
-        ((WIDTH - title_width) / 2, 23),
+        (
+            (WIDTH - title_width) / 2,
+            23
+        ),
         title,
         font=TITLE_FONT,
         fill=MUTED
     )
 
+    # -----------------------------------------------------
     # LEFT PANE
+    # -----------------------------------------------------
+
     draw.rounded_rectangle(
         LEFT_PANE,
         radius=10,
         fill="#000000"
     )
 
+    # -----------------------------------------------------
     # RIGHT PANE
+    # -----------------------------------------------------
+
     draw.rounded_rectangle(
         RIGHT_PANE,
         radius=10,
         fill="#010301"
     )
 
+    # -----------------------------------------------------
     # DIVIDER
+    # -----------------------------------------------------
+
     draw.line(
-        (DIVIDER_X, DIVIDER_TOP, DIVIDER_X, DIVIDER_BOTTOM),
+        (
+            DIVIDER_X,
+            DIVIDER_TOP,
+            DIVIDER_X,
+            DIVIDER_BOTTOM
+        ),
         fill=DIVIDER,
         width=1
     )
 
+    # -----------------------------------------------------
     # LABELS
+    # -----------------------------------------------------
+
     draw.text(
-        (LEFT_LABEL_X, LABEL_Y),
+        (
+            LEFT_LABEL_X,
+            LABEL_Y
+        ),
         "[ ./ascii-art.txt ]",
         font=LABEL_FONT,
         fill=GREEN
     )
 
     draw.text(
-        (RIGHT_LABEL_X, LABEL_Y),
+        (
+            RIGHT_LABEL_X,
+            LABEL_Y
+        ),
         "[ interactive shell // guest session ]",
         font=LABEL_FONT,
         fill=GREEN
@@ -264,303 +427,932 @@ def make_base():
 BASE_IMAGE = make_base()
 
 # =========================================================
-# TEXT / WRAP HELPERS
+# SEGMENT HELPERS
 # =========================================================
 
-MEASURE_IMAGE = Image.new("RGB", (10, 10), BG)
-MEASURE_DRAW = ImageDraw.Draw(MEASURE_IMAGE)
+def command(text):
 
-def text_width(text, font):
-    return MEASURE_DRAW.textlength(text, font=font)
-
-
-def wrap_words(text, font, max_width):
-    words = text.split()
-    if not words:
-        return [""]
-
-    lines = []
-    current = words[0]
-
-    for word in words[1:]:
-        candidate = current + " " + word
-        if text_width(candidate, font) <= max_width:
-            current = candidate
-        else:
-            lines.append(current)
-            current = word
-
-    lines.append(current)
-    return lines
-
-
-def wrap_words_indented(text, font, first_width, later_width):
-    words = text.split()
-    if not words:
-        return [""]
-
-    lines = []
-    current = words[0]
-    current_limit = first_width
-
-    for word in words[1:]:
-        candidate = current + " " + word
-        if text_width(candidate, font) <= current_limit:
-            current = candidate
-        else:
-            lines.append(current)
-            current = word
-            current_limit = later_width
-
-    lines.append(current)
-    return lines
-
-
-def command_segments(text):
     return [
-        ("rahym@github", GREEN, True),
-        (":", MUTED, False),
-        ("~", BLUE, True),
-        ("$ ", MUTED, False),
-        (text, WHITE, False),
+        (
+            "rahym@github",
+            GREEN,
+            True
+        ),
+        (
+            ":",
+            MUTED,
+            False
+        ),
+        (
+            "~",
+            BLUE,
+            True
+        ),
+        (
+            "$ ",
+            MUTED,
+            False
+        ),
+        (
+            text,
+            WHITE,
+            False
+        ),
     ]
 
 
-def simple_segments(text, color=TEXT, bold=False):
-    return [(text, color, bold)]
+def output(
+    text,
+    color=TEXT,
+    bold=False
+):
+
+    return [
+        (
+            text,
+            color,
+            bold
+        )
+    ]
 
 
-def prefixed_wrapped_segments(prefix, content, prefix_color=GREEN, prefix_bold=True,
-                              content_color=TEXT, content_bold=False, gap="  "):
-    prefix_width = text_width(prefix, TERM_BOLD if prefix_bold else TERM_FONT)
-    gap_width = text_width(gap, TERM_FONT)
+def prefixed(
+    prefix,
+    content,
+    prefix_color=GREEN,
+    prefix_bold=True,
+    content_color=TEXT
+):
 
-    first_width = max(60, TERM_WRAP_WIDTH - prefix_width - gap_width)
-    continuation_indent = " " * (len(prefix) + len(gap))
-    later_width = max(60, TERM_WRAP_WIDTH - text_width(continuation_indent, TERM_FONT))
+    return [
+        (
+            prefix,
+            prefix_color,
+            prefix_bold
+        ),
+        (
+            "  ",
+            TEXT,
+            False
+        ),
+        (
+            content,
+            content_color,
+            False
+        ),
+    ]
 
-    wrapped = wrap_words_indented(content, TERM_FONT, first_width, later_width)
+
+# =========================================================
+# REAL PIXEL-BASED WRAPPING
+# =========================================================
+
+def merge_piece(
+    pieces,
+    text,
+    color,
+    bold
+):
+
+    if not text:
+        return
+
+    if (
+        pieces
+        and pieces[-1][1] == color
+        and pieces[-1][2] == bold
+    ):
+
+        old_text, _, _ = pieces[-1]
+
+        pieces[-1] = (
+            old_text + text,
+            color,
+            bold
+        )
+
+    else:
+
+        pieces.append(
+            (
+                text,
+                color,
+                bold
+            )
+        )
+
+
+def line_pixel_width(segments):
+
+    total = 0
+
+    for text, _, bold in segments:
+
+        total += pixel_width(
+            text,
+            bold
+        )
+
+    return total
+
+
+def strip_trailing_spaces(segments):
+
+    result = list(segments)
+
+    while result:
+
+        text, color, bold = (
+            result[-1]
+        )
+
+        stripped = text.rstrip()
+
+        if stripped:
+
+            result[-1] = (
+                stripped,
+                color,
+                bold
+            )
+
+            break
+
+        result.pop()
+
+    return result
+
+
+def split_long_token(
+    token,
+    color,
+    bold,
+    max_width
+):
+
+    chunks = []
+
+    current = ""
+
+    for char in token:
+
+        proposed = (
+            current + char
+        )
+
+        if (
+            current
+            and pixel_width(
+                proposed,
+                bold
+            ) > max_width
+        ):
+
+            chunks.append(
+                (
+                    current,
+                    color,
+                    bold
+                )
+            )
+
+            current = char
+
+        else:
+
+            current = proposed
+
+    if current:
+
+        chunks.append(
+            (
+                current,
+                color,
+                bold
+            )
+        )
+
+    return chunks
+
+
+def wrap_segments(
+    segments,
+    max_width
+):
+    """
+    Wrap styled text based on the actual rendered
+    pixel width.
+
+    Every returned visual line is guaranteed to be
+    <= max_width.
+    """
 
     lines = []
 
-    if wrapped:
-        first_line = [
-            (prefix, prefix_color, prefix_bold),
-            (gap + wrapped[0], content_color, content_bold),
-        ]
-        lines.append(first_line)
+    current = []
 
-        for continuation in wrapped[1:]:
-            lines.append([
-                (continuation_indent + continuation, content_color, content_bold)
-            ])
+    # -----------------------------------------------------
+    # TOKENIZE ALL SEGMENTS
+    # -----------------------------------------------------
+
+    tokens = []
+
+    for text, color, bold in segments:
+
+        parts = re.findall(
+            r"\s+|\S+",
+            text
+        )
+
+        for part in parts:
+
+            tokens.append(
+                (
+                    part,
+                    color,
+                    bold
+                )
+            )
+
+    # -----------------------------------------------------
+    # WRAP
+    # -----------------------------------------------------
+
+    for token, color, bold in tokens:
+
+        # ---------------------------------------------
+        # Ignore whitespace at beginning of new line
+        # ---------------------------------------------
+
+        if (
+            not current
+            and token.isspace()
+        ):
+            continue
+
+        token_width = pixel_width(
+            token,
+            bold
+        )
+
+        current_width = (
+            line_pixel_width(
+                current
+            )
+        )
+
+        # ---------------------------------------------
+        # Token fits
+        # ---------------------------------------------
+
+        if (
+            current_width
+            + token_width
+            <= max_width
+        ):
+
+            merge_piece(
+                current,
+                token,
+                color,
+                bold
+            )
+
+            continue
+
+        # ---------------------------------------------
+        # Whitespace overflows:
+        # just start new line
+        # ---------------------------------------------
+
+        if token.isspace():
+
+            current = (
+                strip_trailing_spaces(
+                    current
+                )
+            )
+
+            if current:
+
+                lines.append(
+                    current
+                )
+
+            current = []
+
+            continue
+
+        # ---------------------------------------------
+        # Current line is full:
+        # flush it
+        # ---------------------------------------------
+
+        if current:
+
+            current = (
+                strip_trailing_spaces(
+                    current
+                )
+            )
+
+            if current:
+
+                lines.append(
+                    current
+                )
+
+            current = []
+
+        # ---------------------------------------------
+        # Single token itself is wider than pane.
+        # Split it character-by-character.
+        #
+        # Useful for long URLs.
+        # ---------------------------------------------
+
+        if (
+            pixel_width(
+                token,
+                bold
+            )
+            > max_width
+        ):
+
+            chunks = split_long_token(
+                token,
+                color,
+                bold,
+                max_width
+            )
+
+            for index, chunk in enumerate(
+                chunks
+            ):
+
+                if (
+                    index
+                    < len(chunks) - 1
+                ):
+
+                    lines.append(
+                        [chunk]
+                    )
+
+                else:
+
+                    current = [
+                        chunk
+                    ]
+
+        else:
+
+            current = [
+                (
+                    token,
+                    color,
+                    bold
+                )
+            ]
+
+    # -----------------------------------------------------
+    # FINAL LINE
+    # -----------------------------------------------------
+
+    current = (
+        strip_trailing_spaces(
+            current
+        )
+    )
+
+    if current:
+
+        lines.append(
+            current
+        )
+
+    # -----------------------------------------------------
+    # SAFETY CHECK
+    # -----------------------------------------------------
+
+    for line in lines:
+
+        width = line_pixel_width(
+            line
+        )
+
+        if width > max_width + 1:
+
+            raise RuntimeError(
+                "Wrapped line still exceeds pane: "
+                f"{width:.1f}px > "
+                f"{max_width:.1f}px"
+            )
 
     return lines
 
 
 # =========================================================
-# BUILD VISUAL TERMINAL LINES
-# Each item is one visual line on the right pane
+# BUILD LOGICAL TERMINAL BLOCKS
+# =========================================================
+
+blocks = []
+
+
+def add_block(
+    segments,
+    cps,
+    pause_after=TERM_LINE_PAUSE,
+    gap_after=0
+):
+
+    blocks.append(
+        {
+            "segments": segments,
+            "cps": cps,
+            "pause_after": pause_after,
+            "gap_after": gap_after,
+        }
+    )
+
+
+# ---------------------------------------------------------
+# WELCOME
+# ---------------------------------------------------------
+
+add_block(
+    output(
+        "Welcome to Rahym's GitHub",
+        GREEN,
+        True
+    ),
+    WELCOME_CPS,
+    0.30,
+    TERM_SECTION_GAP
+)
+
+# ---------------------------------------------------------
+# WHOAMI
+# ---------------------------------------------------------
+
+add_block(
+    command(
+        "whoami"
+    ),
+    TERM_COMMAND_CPS
+)
+
+add_block(
+    output(
+        PROFILE["name"],
+        GREEN,
+        True
+    ),
+    TERM_OUTPUT_CPS,
+    0.05
+)
+
+add_block(
+    output(
+        PROFILE["title"],
+        BLUE
+    ),
+    TERM_OUTPUT_CPS,
+    TERM_SECTION_PAUSE,
+    TERM_SECTION_GAP
+)
+
+# ---------------------------------------------------------
+# ABOUT
+# ---------------------------------------------------------
+
+add_block(
+    command(
+        "cat about.txt"
+    ),
+    TERM_COMMAND_CPS
+)
+
+add_block(
+    output(
+        PROFILE["about"]
+    ),
+    TERM_OUTPUT_CPS,
+    TERM_SECTION_PAUSE,
+    TERM_SECTION_GAP
+)
+
+# ---------------------------------------------------------
+# STACK
+# ---------------------------------------------------------
+
+add_block(
+    command(
+        "./stack --list"
+    ),
+    TERM_COMMAND_CPS
+)
+
+add_block(
+    prefixed(
+        "[+] languages",
+        PROFILE["languages"]
+    ),
+    TERM_OUTPUT_CPS,
+    0.05
+)
+
+add_block(
+    prefixed(
+        "[+] web",
+        PROFILE["web"]
+    ),
+    TERM_OUTPUT_CPS,
+    0.05
+)
+
+add_block(
+    prefixed(
+        "[+] ai/data",
+        PROFILE["ai_data"]
+    ),
+    TERM_OUTPUT_CPS,
+    0.05
+)
+
+add_block(
+    prefixed(
+        "[+] tools",
+        PROFILE["tools"]
+    ),
+    TERM_OUTPUT_CPS,
+    TERM_SECTION_PAUSE,
+    TERM_SECTION_GAP
+)
+
+# ---------------------------------------------------------
+# CONTACT
+# ---------------------------------------------------------
+
+add_block(
+    command(
+        "./contact --show"
+    ),
+    TERM_COMMAND_CPS
+)
+
+add_block(
+    prefixed(
+        "mail",
+        PROFILE["email"],
+        prefix_color=TEXT,
+        prefix_bold=False
+    ),
+    TERM_OUTPUT_CPS,
+    0.05
+)
+
+add_block(
+    prefixed(
+        "linkedin",
+        PROFILE["linkedin"],
+        prefix_color=TEXT,
+        prefix_bold=False
+    ),
+    TERM_OUTPUT_CPS,
+    TERM_SECTION_PAUSE,
+    TERM_SECTION_GAP
+)
+
+# ---------------------------------------------------------
+# FINAL PROMPT
+# ---------------------------------------------------------
+
+add_block(
+    [
+        (
+            "rahym@github",
+            GREEN,
+            True
+        ),
+        (
+            ":",
+            MUTED,
+            False
+        ),
+        (
+            "~",
+            BLUE,
+            True
+        ),
+        (
+            "$ ",
+            MUTED,
+            False
+        ),
+    ],
+    TERM_COMMAND_CPS,
+    0,
+    0
+)
+
+# =========================================================
+# CONVERT BLOCKS INTO WRAPPED VISUAL LINES
 # =========================================================
 
 visual_lines = []
 
-def add_line(segments, cps, pause_after, step_after):
-    visual_lines.append({
-        "segments": segments,
-        "cps": cps,
-        "pause_after": pause_after,
-        "step_after": step_after,
-    })
+current_y = TERM_START_Y
 
+for block in blocks:
 
-def add_wrapped_plain_block(text, color=TEXT, bold=False, cps=TERM_OUTPUT_CPS,
-                            block_pause=TERM_SECTION_PAUSE):
-    lines = wrap_words(text, TERM_BOLD if bold else TERM_FONT, TERM_WRAP_WIDTH)
-    for i, line in enumerate(lines):
-        add_line(
-            simple_segments(line, color, bold),
-            cps,
-            0.03 if i < len(lines) - 1 else block_pause,
-            TERM_LINE_STEP if i < len(lines) - 1 else TERM_BLOCK_GAP
-        )
-
-
-def add_prefixed_block(prefix, content, prefix_color=GREEN, prefix_bold=True,
-                       content_color=TEXT, content_bold=False, cps=TERM_OUTPUT_CPS,
-                       block_pause=0.08, gap="  "):
-    lines = prefixed_wrapped_segments(
-        prefix=prefix,
-        content=content,
-        prefix_color=prefix_color,
-        prefix_bold=prefix_bold,
-        content_color=content_color,
-        content_bold=content_bold,
-        gap=gap
+    wrapped = wrap_segments(
+        block["segments"],
+        TERM_MAX_WIDTH
     )
 
-    for i, line_segments in enumerate(lines):
-        add_line(
-            line_segments,
-            cps,
-            0.03 if i < len(lines) - 1 else block_pause,
-            TERM_LINE_STEP if i < len(lines) - 1 else TERM_LINE_STEP
+    for index, segments in enumerate(
+        wrapped
+    ):
+
+        is_last = (
+            index
+            == len(wrapped) - 1
         )
 
+        visual_lines.append(
+            {
+                "y": current_y,
+                "segments": segments,
+                "cps": block["cps"],
+                "pause_after": (
+                    block["pause_after"]
+                    if is_last
+                    else 0.025
+                ),
+            }
+        )
 
-# Welcome
-add_line(
-    [("Welcome to Rahym's GitHub", GREEN, True)],
-    WELCOME_CPS,
-    0.35,
-    TERM_BLOCK_GAP
-)
+        current_y += (
+            TERM_LINE_STEP
+        )
 
-# whoami
-add_line(command_segments("whoami"), TERM_COMMAND_CPS, TERM_LINE_PAUSE, TERM_LINE_STEP)
-add_wrapped_plain_block(PROFILE["name"], color=GREEN, bold=True, cps=TERM_OUTPUT_CPS, block_pause=0.06)
-add_wrapped_plain_block(PROFILE["title"], color=BLUE, bold=False, cps=TERM_OUTPUT_CPS, block_pause=TERM_SECTION_PAUSE)
-
-# about
-add_line(command_segments("cat about.txt"), TERM_COMMAND_CPS, TERM_LINE_PAUSE, TERM_LINE_STEP)
-add_wrapped_plain_block(PROFILE["about"], color=TEXT, bold=False, cps=TERM_OUTPUT_CPS, block_pause=TERM_SECTION_PAUSE)
-
-# stack
-add_line(command_segments("./stack --list"), TERM_COMMAND_CPS, TERM_LINE_PAUSE, TERM_LINE_STEP)
-add_prefixed_block("[+] languages", PROFILE["languages"], gap="  ", block_pause=0.08)
-add_prefixed_block("[+] web", PROFILE["web"], gap="        ", block_pause=0.08)
-add_prefixed_block("[+] ai/data", PROFILE["ai_data"], gap="    ", block_pause=0.08)
-add_prefixed_block("[+] tools", PROFILE["tools"], gap="      ", block_pause=TERM_SECTION_PAUSE)
-
-# contact
-add_line(command_segments("./contact --show"), TERM_COMMAND_CPS, TERM_LINE_PAUSE, TERM_LINE_STEP)
-add_prefixed_block("mail", PROFILE["email"], prefix_color=TEXT, prefix_bold=False,
-                   content_color=TEXT, content_bold=False, gap="     ", block_pause=0.08)
-add_prefixed_block("linkedin", PROFILE["linkedin"], prefix_color=TEXT, prefix_bold=False,
-                   content_color=TEXT, content_bold=False, gap=" ", block_pause=TERM_SECTION_PAUSE)
-
-# final prompt
-add_line(
-    [
-        ("rahym@github", GREEN, True),
-        (":", MUTED, False),
-        ("~", BLUE, True),
-        ("$ ", MUTED, False),
-    ],
-    TERM_COMMAND_CPS,
-    0.0,
-    TERM_LINE_STEP
-)
+    current_y += (
+        block["gap_after"]
+    )
 
 # =========================================================
-# PLACE TERMINAL LINES VERTICALLY
+# VERTICAL SAFETY CHECK
 # =========================================================
 
-current_y = TERM_START_Y
-for line in visual_lines:
-    line["y"] = current_y
-    current_y += line["step_after"]
+if visual_lines:
+
+    last_y = visual_lines[-1]["y"]
+
+    if (
+        last_y
+        + TERM_LINE_STEP
+        > RIGHT_PANE[3] - 8
+    ):
+
+        raise RuntimeError(
+            "Terminal content is too tall. "
+            f"Last line y={last_y}. "
+            "Increase HEIGHT or reduce spacing."
+        )
 
 # =========================================================
-# TIMING
+# ASCII TIMING
 # =========================================================
 
 ascii_end = max(
-    ASCII_START + index * ASCII_LINE_STAGGER + (len(line) / ASCII_CPS if line else 0)
-    for index, line in enumerate(ascii_lines)
+
+    ASCII_START
+    + index
+    * ASCII_LINE_STAGGER
+    + (
+        len(line)
+        / ASCII_CPS
+        if line
+        else 0
+    )
+
+    for index, line
+    in enumerate(ascii_lines)
 )
 
-SHELL_START = max(2.2, ascii_end - 0.8)
+SHELL_START = max(
+    2.2,
+    ascii_end - 0.8
+)
 
-timeline_lines = []
+# =========================================================
+# TERMINAL TIMELINE
+# =========================================================
+
+timeline = []
+
 current_time = SHELL_START
 
 for line in visual_lines:
-    total_chars = sum(len(text) for text, _, _ in line["segments"])
-    end_time = current_time + total_chars / line["cps"]
 
-    timeline_lines.append({
-        "y": line["y"],
-        "segments": line["segments"],
-        "cps": line["cps"],
-        "start": current_time,
-        "end": end_time,
-        "chars": total_chars,
-    })
+    total_chars = sum(
+        len(text)
+        for text, _, _
+        in line["segments"]
+    )
 
-    current_time = end_time + line["pause_after"]
+    end_time = (
+        current_time
+        + total_chars
+        / line["cps"]
+    )
 
-ANIMATION_END = timeline_lines[-1]["end"]
-TOTAL_TIME = ANIMATION_END + FINAL_HOLD
+    timeline.append(
+        {
+            "y": line["y"],
+            "segments": line["segments"],
+            "cps": line["cps"],
+            "chars": total_chars,
+            "start": current_time,
+            "end": end_time,
+        }
+    )
+
+    current_time = (
+        end_time
+        + line["pause_after"]
+    )
+
+ANIMATION_END = (
+    timeline[-1]["end"]
+)
+
+TOTAL_TIME = (
+    ANIMATION_END
+    + FINAL_HOLD
+)
 
 # =========================================================
-# DRAW PARTIALLY-TYPED LINE
+# DRAW STYLED TEXT
 # =========================================================
 
-def draw_segments(draw, x, y, segments, visible_chars):
+def draw_segments(
+    draw,
+    x,
+    y,
+    segments,
+    visible_chars
+):
+
     current_x = x
     remaining = visible_chars
 
     for text, color, bold in segments:
-        font = TERM_BOLD if bold else TERM_FONT
 
-        take = max(0, min(len(text), remaining))
+        font = get_font(
+            bold
+        )
+
+        take = min(
+            len(text),
+            max(
+                0,
+                remaining
+            )
+        )
+
         partial = text[:take]
 
         if partial:
+
             draw.text(
-                (current_x, y),
+                (
+                    current_x,
+                    y
+                ),
                 partial,
                 font=font,
                 fill=color
             )
 
-        if take < len(text):
-            current_x += draw.textlength(partial, font=font)
-            break
+        current_x += (
+            draw.textlength(
+                partial,
+                font=font
+            )
+        )
 
-        current_x += draw.textlength(text, font=font)
-        remaining -= len(text)
+        remaining -= take
+
+        if take < len(text):
+            break
 
     return current_x
 
 # =========================================================
-# RENDER ONE FRAME
+# RENDER FRAME
 # =========================================================
 
-def render_frame(time_seconds):
+def render_frame(
+    time_seconds
+):
+
     image = BASE_IMAGE.copy()
-    draw = ImageDraw.Draw(image)
 
+    draw = ImageDraw.Draw(
+        image
+    )
+
+    # -----------------------------------------------------
     # ASCII ART
-    for index, line in enumerate(ascii_lines):
-        line_start = ASCII_START + index * ASCII_LINE_STAGGER
+    # -----------------------------------------------------
 
-        if time_seconds < line_start:
+    for index, line in enumerate(
+        ascii_lines
+    ):
+
+        line_start = (
+            ASCII_START
+            + index
+            * ASCII_LINE_STAGGER
+        )
+
+        if (
+            time_seconds
+            < line_start
+        ):
             continue
 
-        elapsed = time_seconds - line_start
-        visible = int(elapsed * ASCII_CPS) + 1
-        visible = min(len(line), max(0, visible))
+        elapsed = (
+            time_seconds
+            - line_start
+        )
+
+        visible = (
+            int(
+                elapsed
+                * ASCII_CPS
+            )
+            + 1
+        )
+
+        visible = min(
+            len(line),
+            max(
+                0,
+                visible
+            )
+        )
 
         if visible:
+
             draw.text(
-                (ART_X, ART_Y + index * ART_LINE_H),
+                (
+                    ART_X,
+                    ART_Y
+                    + index
+                    * ART_LINE_H
+                ),
                 line[:visible],
                 font=ASCII_FONT,
                 fill=ASCII_GREEN
             )
 
-    # TERMINAL TEXT
+    # -----------------------------------------------------
+    # TERMINAL
+    # -----------------------------------------------------
+
     active_cursor = None
 
-    for line in timeline_lines:
-        if time_seconds < line["start"]:
+    for line in timeline:
+
+        if (
+            time_seconds
+            < line["start"]
+        ):
             continue
 
-        elapsed = time_seconds - line["start"]
-        visible = int(elapsed * line["cps"]) + 1
-        visible = min(line["chars"], max(0, visible))
+        elapsed = (
+            time_seconds
+            - line["start"]
+        )
+
+        visible = (
+            int(
+                elapsed
+                * line["cps"]
+            )
+            + 1
+        )
+
+        visible = min(
+            line["chars"],
+            max(
+                0,
+                visible
+            )
+        )
 
         end_x = draw_segments(
             draw,
@@ -570,20 +1362,49 @@ def render_frame(time_seconds):
             visible
         )
 
-        if line["start"] <= time_seconds < line["end"] and visible < line["chars"]:
-            active_cursor = (end_x, line["y"])
+        if (
+            line["start"]
+            <= time_seconds
+            < line["end"]
+            and visible
+            < line["chars"]
+        ):
 
-    # ACTIVE TYPING CURSOR
+            active_cursor = (
+                end_x,
+                line["y"]
+            )
+
+    # -----------------------------------------------------
+    # ACTIVE CURSOR
+    # -----------------------------------------------------
+
     if active_cursor:
-        cursor_x, cursor_y = active_cursor
+
+        cursor_x, cursor_y = (
+            active_cursor
+        )
+
         draw.rectangle(
-            (cursor_x + 1, cursor_y + 4, cursor_x + 9, cursor_y + 23),
+            (
+                cursor_x + 1,
+                cursor_y + 4,
+                cursor_x + 10,
+                cursor_y + 24,
+            ),
             fill=GREEN
         )
 
+    # -----------------------------------------------------
     # FINAL BLINKING CURSOR
-    elif time_seconds >= ANIMATION_END:
-        final_line = timeline_lines[-1]
+    # -----------------------------------------------------
+
+    elif (
+        time_seconds
+        >= ANIMATION_END
+    ):
+
+        final_line = timeline[-1]
 
         cursor_x = draw_segments(
             draw,
@@ -593,57 +1414,121 @@ def render_frame(time_seconds):
             final_line["chars"]
         )
 
-        cursor_visible = int((time_seconds - ANIMATION_END) * 2) % 2 == 0
+        cursor_visible = (
+            int(
+                (
+                    time_seconds
+                    - ANIMATION_END
+                )
+                * 2
+            )
+            % 2
+            == 0
+        )
 
         if cursor_visible:
+
             draw.rectangle(
-                (cursor_x + 1, final_line["y"] + 4, cursor_x + 9, final_line["y"] + 23),
+                (
+                    cursor_x + 1,
+                    final_line["y"] + 4,
+                    cursor_x + 10,
+                    final_line["y"] + 24,
+                ),
                 fill=GREEN
             )
 
     return image
 
 # =========================================================
-# BUILD GIF PALETTE
+# PALETTE
 # =========================================================
 
-palette_source = render_frame(ANIMATION_END).quantize(
-    colors=64,
-    method=Image.Quantize.MEDIANCUT
+palette_source = (
+    render_frame(
+        ANIMATION_END
+    )
+    .quantize(
+        colors=64,
+        method=Image.Quantize.MEDIANCUT
+    )
 )
 
 # =========================================================
-# GENERATE FRAMES
+# GENERATE GIF
 # =========================================================
 
-frame_count = math.ceil(TOTAL_TIME * FPS) + 1
+frame_count = (
+    math.ceil(
+        TOTAL_TIME
+        * FPS
+    )
+    + 1
+)
+
 frames = []
 
 print()
-print("Generating animated terminal...")
-print(f"Frames: {frame_count}")
-print(f"Duration: {TOTAL_TIME:.1f}s")
+print(
+    "Generating animated terminal..."
+)
+print(
+    f"Terminal max width: "
+    f"{TERM_MAX_WIDTH}px"
+)
+print(
+    f"Visual terminal lines: "
+    f"{len(visual_lines)}"
+)
+print(
+    f"Frames: {frame_count}"
+)
+print(
+    f"Duration: {TOTAL_TIME:.1f}s"
+)
 print()
 
-for frame_number in range(frame_count):
-    current_time = frame_number / FPS
-    frame = render_frame(current_time)
+for frame_number in range(
+    frame_count
+):
+
+    current_time = (
+        frame_number
+        / FPS
+    )
+
+    frame = render_frame(
+        current_time
+    )
 
     frame = frame.quantize(
         palette=palette_source,
         dither=Image.Dither.NONE
     )
 
-    frames.append(frame)
+    frames.append(
+        frame
+    )
 
-    if frame_number % 50 == 0:
-        print(f"{frame_number}/{frame_count}")
+    if (
+        frame_number
+        % 50
+        == 0
+    ):
+
+        print(
+            f"{frame_number}"
+            f"/{frame_count}"
+        )
 
 # =========================================================
-# SAVE GIF
+# SAVE
 # =========================================================
 
-OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+OUTPUT_FILE.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
 
 frames[0].save(
     OUTPUT_FILE,
@@ -655,9 +1540,17 @@ frames[0].save(
     disposal=1
 )
 
-size_mb = OUTPUT_FILE.stat().st_size / 1024 / 1024
+size_mb = (
+    OUTPUT_FILE.stat().st_size
+    / 1024
+    / 1024
+)
 
 print()
-print(f"Generated: {OUTPUT_FILE}")
-print(f"Size: {size_mb:.2f} MB")
+print(
+    f"Generated: {OUTPUT_FILE}"
+)
+print(
+    f"Size: {size_mb:.2f} MB"
+)
 print()
