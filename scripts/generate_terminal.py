@@ -897,7 +897,7 @@ add_block(
 
 add_block(
     command(
-        "whoami"
+        "CS Student at LUMS"
     ),
     TERM_COMMAND_CPS
 )
