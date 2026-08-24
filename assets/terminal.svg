@@ -1,0 +1,867 @@
+
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="1400"
+    height="620"
+    viewBox="0 0 1400 620"
+    role="img"
+    aria-labelledby="title desc"
+>
+
+<title id="title">
+    Rahym Faisal Khan — Terminal Profile
+</title>
+
+<desc id="desc">
+    Terminal themed GitHub profile with ASCII art
+    and developer information.
+</desc>
+
+
+<style>
+
+    :root {
+        color-scheme: dark;
+    }
+
+    .bg {
+        fill: #030703;
+    }
+
+    .panel {
+        fill: #07110b;
+        stroke: #1d5f3a;
+        stroke-width: 2;
+    }
+
+    .topbar {
+        fill: #0a1710;
+    }
+
+    .divider {
+        stroke: #173c29;
+        stroke-width: 1;
+    }
+
+
+    /* ===================================
+       ASCII
+       =================================== */
+
+    .ascii {
+        fill: #3fb950;
+
+        font-family:
+            "SFMono-Regular",
+            Consolas,
+            "Liberation Mono",
+            Menlo,
+            monospace;
+
+        font-size: 6.8px;
+
+        white-space: pre;
+    }
+
+
+    /* ===================================
+       TERMINAL TEXT
+       =================================== */
+
+    .label {
+        fill: #3fb950;
+
+        font:
+            700 14px
+            "SFMono-Regular",
+            Consolas,
+            "Liberation Mono",
+            Menlo,
+            monospace;
+    }
+
+    .prompt {
+        fill: #3fb950;
+
+        font:
+            700 17px
+            "SFMono-Regular",
+            Consolas,
+            "Liberation Mono",
+            Menlo,
+            monospace;
+    }
+
+    .path {
+        fill: #58a6ff;
+
+        font:
+            700 17px
+            "SFMono-Regular",
+            Consolas,
+            "Liberation Mono",
+            Menlo,
+            monospace;
+    }
+
+    .command {
+        fill: #f0f6fc;
+
+        font:
+            17px
+            "SFMono-Regular",
+            Consolas,
+            "Liberation Mono",
+            Menlo,
+            monospace;
+    }
+
+    .output {
+        fill: #c9d1d9;
+
+        font:
+            16px
+            "SFMono-Regular",
+            Consolas,
+            "Liberation Mono",
+            Menlo,
+            monospace;
+    }
+
+    .accent {
+        fill: #39d353;
+
+        font:
+            700 16px
+            "SFMono-Regular",
+            Consolas,
+            "Liberation Mono",
+            Menlo,
+            monospace;
+    }
+
+    .cyan {
+        fill: #79c0ff;
+
+        font:
+            16px
+            "SFMono-Regular",
+            Consolas,
+            "Liberation Mono",
+            Menlo,
+            monospace;
+    }
+
+    .muted {
+        fill: #6e7681;
+
+        font:
+            16px
+            "SFMono-Regular",
+            Consolas,
+            "Liberation Mono",
+            Menlo,
+            monospace;
+    }
+
+
+    /* ===================================
+       ANIMATION
+       =================================== */
+
+    .reveal {
+        opacity: 0;
+
+        animation:
+            reveal .18s linear forwards;
+    }
+
+    .cursor {
+        fill: #3fb950;
+
+        animation:
+            blink 1s steps(1) infinite;
+    }
+
+    @keyframes reveal {
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes blink {
+
+        0%, 48% {
+            opacity: 1;
+        }
+
+        49%, 100% {
+            opacity: 0;
+        }
+    }
+
+</style>
+
+
+<!-- BACKGROUND -->
+
+<rect
+    class="bg"
+    width="100%"
+    height="100%"
+    rx="18"
+/>
+
+
+<!-- TERMINAL WINDOW -->
+
+<rect
+    class="panel"
+    x="10"
+    y="10"
+    width="1380"
+    height="600"
+    rx="16"
+/>
+
+
+<!-- TITLE BAR -->
+
+<rect
+    class="topbar"
+    x="11"
+    y="11"
+    width="1378"
+    height="44"
+    rx="15"
+/>
+
+<rect
+    class="topbar"
+    x="11"
+    y="38"
+    width="1378"
+    height="17"
+/>
+
+
+<!-- WINDOW BUTTONS -->
+
+<circle
+    cx="34"
+    cy="33"
+    r="7"
+    fill="#ff5f56"
+/>
+
+<circle
+    cx="57"
+    cy="33"
+    r="7"
+    fill="#ffbd2e"
+/>
+
+<circle
+    cx="80"
+    cy="33"
+    r="7"
+    fill="#27c93f"
+/>
+
+
+<!-- WINDOW TITLE -->
+
+<text
+    x="700"
+    y="38"
+    text-anchor="middle"
+    class="muted"
+>
+    rahym@github: ~/profile
+</text>
+
+
+<!-- DIVIDER -->
+
+<line
+    x1="620"
+    y1="55"
+    x2="620"
+    y2="595"
+    class="divider"
+/>
+
+
+<!-- PANEL HEADERS -->
+
+<text
+    x="34"
+    y="74"
+    class="label"
+>
+    [ ./ascii-art.txt ]
+</text>
+
+<text
+    x="650"
+    y="74"
+    class="label"
+>
+    [ interactive shell // guest session ]
+</text>
+
+
+
+        <text
+            x="34"
+            y="82.0"
+            class="ascii reveal"
+            style="animation-delay:0.020s"
+        >                                                                                              </text>
+        
+
+        <text
+            x="34"
+            y="91.7"
+            class="ascii reveal"
+            style="animation-delay:0.032s"
+        >                                                                              &gt;+  ..:.   .    </text>
+        
+
+        <text
+            x="34"
+            y="101.4"
+            class="ascii reveal"
+            style="animation-delay:0.044s"
+        >                                                                              (     ::        </text>
+        
+
+        <text
+            x="34"
+            y="111.1"
+            class="ascii reveal"
+            style="animation-delay:0.056s"
+        >                                                                             -&lt;    .~-   .    </text>
+        
+
+        <text
+            x="34"
+            y="120.8"
+            class="ascii reveal"
+            style="animation-delay:0.068s"
+        >                                          =-*:&gt;&gt;.                            &gt;=    :~~   .    </text>
+        
+
+        <text
+            x="34"
+            y="130.5"
+            class="ascii reveal"
+            style="animation-delay:0.080s"
+        >                                         -&gt;*:*^+{(%{                         ]     ~~-   ~    </text>
+        
+
+        <text
+            x="34"
+            y="140.2"
+            class="ascii reveal"
+            style="animation-delay:0.092s"
+        >                                        .   -:-=  +^({({{#@#(]               *    .++:  ~*    </text>
+        
+
+        <text
+            x="34"
+            y="149.9"
+            class="ascii reveal"
+            style="animation-delay:0.104s"
+        >                               =~)&gt;:    --.~-  :  ~    --+~*&lt;({%@            =    :==   -=    </text>
+        
+
+        <text
+            x="34"
+            y="159.6"
+            class="ascii reveal"
+            style="animation-delay:0.116s"
+        >                            -*]^-~:([).      :^  ~:-&gt;==*-:++:  &gt;~ *               :~+.  +=    </text>
+        
+
+        <text
+            x="34"
+            y="169.3"
+            class="ascii reveal"
+            style="animation-delay:0.128s"
+        >                        .=~.*:: -:~-  :~-  ~ =  .:~+:^===-~:*^~=^[@               .-*   ~     </text>
+        
+
+        <text
+            x="34"
+            y="179.0"
+            class="ascii reveal"
+            style="animation-delay:0.140s"
+        >                        : ... -. .:-:=+=~~*~^+&gt;}*)&lt;+*~=+.-~ +*~+~={         ~     :-+   :     </text>
+        
+
+        <text
+            x="34"
+            y="188.7"
+            class="ascii reveal"
+            style="animation-delay:0.152s"
+        >                      .     :  :--*-=:-~~:.  -.-=+ ~^:--**)*-=&gt;==^&gt;@        *^   .~-*         </text>
+        
+
+        <text
+            x="34"
+            y="198.4"
+            class="ascii reveal"
+            style="animation-delay:0.164s"
+        >                   )    .     .~- .~~ ~+.-::. ...~:*:=+==~*~-::~^*=({@@##   .    .-:=         </text>
+        
+
+        <text
+            x="34"
+            y="208.1"
+            class="ascii reveal"
+            style="animation-delay:0.176s"
+        >                 .     ..  :  .    :=~.~           .:-~+=-*.~~=:=:-~+&lt;&lt;*}@      ~+=-&gt;         </text>
+        
+
+        <text
+            x="34"
+            y="217.8"
+            class="ascii reveal"
+            style="animation-delay:0.188s"
+        >                    . .      + .-= -~.               .-.~.-=^^=++~*+=+&gt;^-}       ^-.          </text>
+        
+
+        <text
+            x="34"
+            y="227.5"
+            class="ascii reveal"
+            style="animation-delay:0.200s"
+        >                &gt;  ^  .    &gt;-. :.:  - .              &gt;=*^^*&gt;~+~=~*^ +*^~:&lt;&gt;       ~=     :].  </text>
+        
+
+        <text
+            x="34"
+            y="237.2"
+            class="ascii reveal"
+            style="animation-delay:0.212s"
+        >                -    +* *-:   ~- -: .                ^=~+---..-+*..-~ ~+~*@.  .  :(^-    :.   </text>
+        
+
+        <text
+            x="34"
+            y="246.9"
+            class="ascii reveal"
+            style="animation-delay:0.224s"
+        >                ~   *&gt;&gt;       :^+~ ~                  +-.--:=&gt;*&gt;*&gt;**^+^~*&gt;]   .   *~          </text>
+        
+
+        <text
+            x="34"
+            y="256.6"
+            class="ascii reveal"
+            style="animation-delay:0.236s"
+        >                   +.:. + + &gt;[(    -               .^+==^+*.* .~.-==++&gt;*^(        .*  .+      </text>
+        
+
+        <text
+            x="34"
+            y="266.3"
+            class="ascii reveal"
+            style="animation-delay:0.248s"
+        >               &gt;  .~   :.. +=   . *)^~==-        =)&lt;^*^++~^++&lt;~**&gt;^++=^&gt;+&lt;  =    +*&lt;&gt;         </text>
+        
+
+        <text
+            x="34"
+            y="276.0"
+            class="ascii reveal"
+            style="animation-delay:0.260s"
+        >                 ~.    )*^-    &lt;]*~:   :~..     {))*~+~^^^&gt;(*^~**)==^==++^.%}  ~]&gt;  --=       </text>
+        
+
+        <text
+            x="34"
+            y="285.7"
+            class="ascii reveal"
+            style="animation-delay:0.272s"
+        >                - )   +~ :::-=     -=+~~::      *~~ :::=+~*+^*~==*&gt;&gt;&lt;*^&lt;*)()%*.:*~  ~&lt;+       </text>
+        
+
+        <text
+            x="34"
+            y="295.4"
+            class="ascii reveal"
+            style="animation-delay:0.284s"
+        >                }( .  .  ^ ~+  -~     :.. (=     +^~*++===--.=++^******=~~- ^   -~++&gt;&gt;        </text>
+        
+
+        <text
+            x="34"
+            y="305.1"
+            class="ascii reveal"
+            style="animation-delay:0.296s"
+        >                ]. : * *&gt;^ }^ ) ( ]([ ~-=^ @&gt;#%{} .~++=~. .+~.&lt;^..-.~+^&gt;&gt;&lt;&gt;&lt;    ::.-+         </text>
+        
+
+        <text
+            x="34"
+            y="314.8"
+            class="ascii reveal"
+            style="animation-delay:0.308s"
+        >                # ^: *=@  (@  ~  .. ::*+)~ &lt;   .] .=. =*&lt;..[^:.() ^]~^+*=+&gt;+ .. . .~-         </text>
+        
+
+        <text
+            x="34"
+            y="324.5"
+            class="ascii reveal"
+            style="animation-delay:0.320s"
+        >                 [.-.~)^  @        .-+*   }     [:.~++++~~:--: ()&lt;=]^&lt;^&lt;^&gt;{... .:..+:         </text>
+        
+
+        <text
+            x="34"
+            y="334.2"
+            class="ascii reveal"
+            style="animation-delay:0.332s"
+        >                  +&gt; ~-         . .      @       &lt;  .:.....:   -(  ~(&gt;&lt;**]@    .:..+:         </text>
+        
+
+        <text
+            x="34"
+            y="343.9"
+            class="ascii reveal"
+            style="animation-delay:0.344s"
+        >                 (:-  &lt;     @          @*         :             +  .}^&lt;([)     ....+:         </text>
+        
+
+        <text
+            x="34"
+            y="353.6"
+            class="ascii reveal"
+            style="animation-delay:0.356s"
+        >                 ]=  ^]                         . *^[&gt;.       }     }^&gt;~&lt;@     ....+-         </text>
+        
+
+        <text
+            x="34"
+            y="363.3"
+            class="ascii reveal"
+            style="animation-delay:0.368s"
+        >                 &gt;^.:                                               []--~}    .:...=.       - </text>
+        
+
+        <text
+            x="34"
+            y="373.0"
+            class="ascii reveal"
+            style="animation-delay:0.380s"
+        >                  #   =             .~  @@ =~-*&gt;.                . ^%] :^}     :..:=.         </text>
+        
+
+        <text
+            x="34"
+            y="382.7"
+            class="ascii reveal"
+            style="animation-delay:0.392s"
+        >                    - [             :.     .--+^^&gt;^.            .  #   ^(      ...:~          </text>
+        
+
+        <text
+            x="34"
+            y="392.4"
+            class="ascii reveal"
+            style="animation-delay:0.404s"
+        >                    : }                   .                     .   :  %      .:..-~          </text>
+        
+
+        <text
+            x="34"
+            y="402.1"
+            class="ascii reveal"
+            style="animation-delay:0.416s"
+        >                    &lt; @                                    .  .   .&lt;&gt; +)      ....:-          </text>
+        
+
+        <text
+            x="34"
+            y="411.8"
+            class="ascii reveal"
+            style="animation-delay:0.428s"
+        >                                       -:...         .            =)  @       .. ..:        . </text>
+        
+
+        <text
+            x="34"
+            y="421.5"
+            class="ascii reveal"
+            style="animation-delay:0.440s"
+        >                                   +@@@{&gt;[]}}(}{&lt;&gt;+              ^%&lt;}         ....:.        . </text>
+        
+
+        <text
+            x="34"
+            y="431.2"
+            class="ascii reveal"
+            style="animation-delay:0.452s"
+        >                                                  ~]*           .(           .::.-(+        . </text>
+        
+
+        <text
+            x="34"
+            y="440.9"
+            class="ascii reveal"
+            style="animation-delay:0.464s"
+        >                                       :~::    .~:.    .         @           .:. -&lt;.       &lt;) </text>
+        
+
+        <text
+            x="34"
+            y="450.6"
+            class="ascii reveal"
+            style="animation-delay:0.476s"
+        >                                   .:-~~=+^&gt;)&lt;*~*:           .. +@           ....-=        *+ </text>
+        
+
+        <text
+            x="34"
+            y="460.3"
+            class="ascii reveal"
+            style="animation-delay:0.488s"
+        >                                      :               .        ~@          . .   .         ^+ </text>
+        
+
+        <text
+            x="34"
+            y="470.0"
+            class="ascii reveal"
+            style="animation-delay:0.500s"
+        >                                                              *@             ....::        .- </text>
+        
+
+        <text
+            x="34"
+            y="479.7"
+            class="ascii reveal"
+            style="animation-delay:0.512s"
+        >                           +                               .+]@              ....-.        :. </text>
+        
+
+        <text
+            x="34"
+            y="489.4"
+            class="ascii reveal"
+            style="animation-delay:0.524s"
+        >                             -:                         ..=^}               ....::         -= </text>
+        
+
+        <text
+            x="34"
+            y="499.1"
+            class="ascii reveal"
+            style="animation-delay:0.536s"
+        >                                .   ..++=.:.:.     .:-=+^=-:}               ....::         -&gt; </text>
+        
+
+        <text
+            x="34"
+            y="508.8"
+            class="ascii reveal"
+            style="animation-delay:0.548s"
+        >                                      .:=-~+=~~=+==&gt;==+-..: ]               ....~.         =&gt; </text>
+        
+
+        <text
+            x="34"
+            y="518.5"
+            class="ascii reveal"
+            style="animation-delay:0.560s"
+        >                        ]                :--~~:~~:::-:: .  :] @@           ....+(:         :~ </text>
+        
+
+        <text
+            x="34"
+            y="528.2"
+            class="ascii reveal"
+            style="animation-delay:0.572s"
+        >                       @@    {          .      ...::.:  . .~:  @@{          ...*+         .:. </text>
+        
+
+        <text
+            x="34"
+            y="537.9"
+            class="ascii reveal"
+            style="animation-delay:0.584s"
+        >                                                               * ^[)                          </text>
+        
+
+    <text
+        x="650"
+        y="96"
+        class="reveal"
+        style="animation-delay:0.70s"
+    >
+
+        <tspan class="prompt">rahym@github</tspan>
+        <tspan class="muted">:</tspan>
+        <tspan class="path">~</tspan>
+        <tspan class="muted">$ </tspan>
+        <tspan class="command">whoami</tspan>
+
+    </text>
+    
+<text x="650" y="130" class="accent reveal" style="animation-delay:0.86s">Rahym Faisal Khan</text>
+<text x="650" y="154" class="cyan reveal" style="animation-delay:0.96s">Software Development | Data Science | AI/ML</text>
+
+    <text
+        x="650"
+        y="196"
+        class="reveal"
+        style="animation-delay:1.10s"
+    >
+
+        <tspan class="prompt">rahym@github</tspan>
+        <tspan class="muted">:</tspan>
+        <tspan class="path">~</tspan>
+        <tspan class="muted">$ </tspan>
+        <tspan class="command">cat about.txt</tspan>
+
+    </text>
+    
+<text x="650" y="230" class="output reveal" style="animation-delay:1.26s">Building software, exploring data, and learning intelligent systems.</text>
+
+    <text
+        x="650"
+        y="274"
+        class="reveal"
+        style="animation-delay:1.40s"
+    >
+
+        <tspan class="prompt">rahym@github</tspan>
+        <tspan class="muted">:</tspan>
+        <tspan class="path">~</tspan>
+        <tspan class="muted">$ </tspan>
+        <tspan class="command">./stack --list</tspan>
+
+    </text>
+    
+
+        <text
+            x="650"
+            y="308"
+            class="reveal"
+            style="animation-delay:1.56s"
+        >
+
+            <tspan class="accent">
+                [+] languages
+            </tspan>
+
+            <tspan class="output">
+                  Python  C++  C  Java  C#  JavaScript  TypeScript  Haskell
+            </tspan>
+
+        </text>
+        
+
+        <text
+            x="650"
+            y="335"
+            class="reveal"
+            style="animation-delay:1.66s"
+        >
+
+            <tspan class="accent">
+                [+] web      
+            </tspan>
+
+            <tspan class="output">
+                  React  Node.js  HTML  CSS
+            </tspan>
+
+        </text>
+        
+
+        <text
+            x="650"
+            y="362"
+            class="reveal"
+            style="animation-delay:1.76s"
+        >
+
+            <tspan class="accent">
+                [+] ai/data  
+            </tspan>
+
+            <tspan class="output">
+                  PyTorch  NumPy  Pandas  scikit-learn  LangChain  Hugging Face
+            </tspan>
+
+        </text>
+        
+
+        <text
+            x="650"
+            y="389"
+            class="reveal"
+            style="animation-delay:1.86s"
+        >
+
+            <tspan class="accent">
+                [+] tools    
+            </tspan>
+
+            <tspan class="output">
+                  Git  GitHub  Docker  VS Code
+            </tspan>
+
+        </text>
+        
+
+    <text
+        x="650"
+        y="425"
+        class="reveal"
+        style="animation-delay:1.96s"
+    >
+
+        <tspan class="prompt">rahym@github</tspan>
+        <tspan class="muted">:</tspan>
+        <tspan class="path">~</tspan>
+        <tspan class="muted">$ </tspan>
+        <tspan class="command">./contact --show</tspan>
+
+    </text>
+    
+<text x="650" y="459" class="output reveal" style="animation-delay:2.12s">mail     rahymfaisal123@gmail.com</text>
+<text x="650" y="486" class="output reveal" style="animation-delay:2.22s">linkedin linkedin.com/in/rahym-faisal-633a6b2b4</text>
+
+    <text
+        x="650"
+        y="526"
+        class="reveal"
+        style="animation-delay:2.32s"
+    >
+
+        <tspan class="prompt">
+            rahym@github
+        </tspan>
+
+        <tspan class="muted">:</tspan>
+
+        <tspan class="path">
+            ~
+        </tspan>
+
+        <tspan class="muted">
+            $
+        </tspan>
+
+        <tspan class="cursor">
+            █
+        </tspan>
+
+    </text>
+    
+</svg>
