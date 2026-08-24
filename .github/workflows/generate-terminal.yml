@@ -1,6 +1,8 @@
 name: Generate Terminal Profile
 
 on:
+  workflow_dispatch:
+
   push:
     branches:
       - main
@@ -30,6 +32,11 @@ jobs:
 
       - name: Generate animated terminal
         run: python scripts/generate_terminal.py
+
+      - name: Check generated file
+        run: |
+          ls -lah assets
+          test -f assets/terminal.gif
 
       - name: Commit generated GIF
         run: |
