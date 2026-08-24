@@ -34,8 +34,8 @@ TERM_COMMAND_CPS = 34.0
 TERM_OUTPUT_CPS = 58.0
 WELCOME_CPS = 30.0
 
-TERM_LINE_PAUSE = 0.12
-TERM_SECTION_PAUSE = 0.22
+TERM_LINE_PAUSE = 0.08
+TERM_SECTION_PAUSE = 0.18
 
 FINAL_HOLD = 2.5
 
@@ -47,7 +47,10 @@ ART_X = 34
 ART_Y = 98
 ART_LINE_H = 11
 
-RIGHT_X = 660
+RIGHT_X = 658
+TERM_START_Y = 108
+TERM_LINE_STEP = 29
+TERM_BLOCK_GAP = 36
 
 # Outer terminal geometry
 OUTER_LEFT = 10
@@ -68,8 +71,10 @@ DIVIDER_TOP = 55
 DIVIDER_BOTTOM = 716
 
 LEFT_LABEL_X = 34
-RIGHT_LABEL_X = 660
+RIGHT_LABEL_X = 658
 LABEL_Y = 70
+
+TERM_WRAP_WIDTH = RIGHT_PANE[2] - RIGHT_X - 18
 
 # =========================================================
 # PROFILE
@@ -144,8 +149,8 @@ def load_font(size, bold=False):
 
 ASCII_FONT = load_font(10)
 
-TERM_FONT = load_font(18)
-TERM_BOLD = load_font(18, bold=True)
+TERM_FONT = load_font(19)
+TERM_BOLD = load_font(19, bold=True)
 
 LABEL_FONT = load_font(16, bold=True)
 TITLE_FONT = load_font(15)
@@ -165,7 +170,7 @@ if not ascii_lines:
     ascii_lines = ["(ascii-art.txt is empty)"]
 
 # =========================================================
-# CREATE STATIC TERMINAL BACKGROUND
+# STATIC TERMINAL BACKGROUND
 # =========================================================
 
 def make_base():
@@ -188,7 +193,6 @@ def make_base():
         fill=TOP_BAR
     )
 
-    # Flatten bottom part of rounded title bar
     draw.rectangle(
         (TITLE_LEFT, 38, TITLE_RIGHT, TITLE_BOTTOM),
         fill=TOP_BAR
@@ -260,10 +264,59 @@ def make_base():
 BASE_IMAGE = make_base()
 
 # =========================================================
-# TERMINAL LINE HELPERS
+# TEXT / WRAP HELPERS
 # =========================================================
 
-def command(text):
+MEASURE_IMAGE = Image.new("RGB", (10, 10), BG)
+MEASURE_DRAW = ImageDraw.Draw(MEASURE_IMAGE)
+
+def text_width(text, font):
+    return MEASURE_DRAW.textlength(text, font=font)
+
+
+def wrap_words(text, font, max_width):
+    words = text.split()
+    if not words:
+        return [""]
+
+    lines = []
+    current = words[0]
+
+    for word in words[1:]:
+        candidate = current + " " + word
+        if text_width(candidate, font) <= max_width:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+
+    lines.append(current)
+    return lines
+
+
+def wrap_words_indented(text, font, first_width, later_width):
+    words = text.split()
+    if not words:
+        return [""]
+
+    lines = []
+    current = words[0]
+    current_limit = first_width
+
+    for word in words[1:]:
+        candidate = current + " " + word
+        if text_width(candidate, font) <= current_limit:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+            current_limit = later_width
+
+    lines.append(current)
+    return lines
+
+
+def command_segments(text):
     return [
         ("rahym@github", GREEN, True),
         (":", MUTED, False),
@@ -273,142 +326,143 @@ def command(text):
     ]
 
 
-def output(text, color=TEXT, bold=False):
-    return [
-        (text, color, bold)
-    ]
+def simple_segments(text, color=TEXT, bold=False):
+    return [(text, color, bold)]
 
 
-def char_count(segments):
-    return sum(len(text) for text, _, _ in segments)
+def prefixed_wrapped_segments(prefix, content, prefix_color=GREEN, prefix_bold=True,
+                              content_color=TEXT, content_bold=False, gap="  "):
+    prefix_width = text_width(prefix, TERM_BOLD if prefix_bold else TERM_FONT)
+    gap_width = text_width(gap, TERM_FONT)
+
+    first_width = max(60, TERM_WRAP_WIDTH - prefix_width - gap_width)
+    continuation_indent = " " * (len(prefix) + len(gap))
+    later_width = max(60, TERM_WRAP_WIDTH - text_width(continuation_indent, TERM_FONT))
+
+    wrapped = wrap_words_indented(content, TERM_FONT, first_width, later_width)
+
+    lines = []
+
+    if wrapped:
+        first_line = [
+            (prefix, prefix_color, prefix_bold),
+            (gap + wrapped[0], content_color, content_bold),
+        ]
+        lines.append(first_line)
+
+        for continuation in wrapped[1:]:
+            lines.append([
+                (continuation_indent + continuation, content_color, content_bold)
+            ])
+
+    return lines
+
 
 # =========================================================
-# RIGHT SIDE CONTENT
+# BUILD VISUAL TERMINAL LINES
+# Each item is one visual line on the right pane
 # =========================================================
 
-terminal_specs = [
-    # WELCOME
-    (
-        108,
-        [("Welcome to Rahym's GitHub", GREEN, True)],
-        WELCOME_CPS,
-        0.35
-    ),
+visual_lines = []
 
-    # WHOAMI
-    (
-        150,
-        command("whoami"),
-        TERM_COMMAND_CPS,
-        TERM_LINE_PAUSE
-    ),
-    (
-        183,
-        output(PROFILE["name"], GREEN, True),
-        TERM_OUTPUT_CPS,
-        0.08
-    ),
-    (
-        211,
-        output(PROFILE["title"], BLUE),
-        TERM_OUTPUT_CPS,
-        TERM_SECTION_PAUSE
-    ),
+def add_line(segments, cps, pause_after, step_after):
+    visual_lines.append({
+        "segments": segments,
+        "cps": cps,
+        "pause_after": pause_after,
+        "step_after": step_after,
+    })
 
-    # ABOUT
-    (
-        255,
-        command("cat about.txt"),
-        TERM_COMMAND_CPS,
-        TERM_LINE_PAUSE
-    ),
-    (
-        288,
-        output(PROFILE["about"]),
-        TERM_OUTPUT_CPS,
-        TERM_SECTION_PAUSE
-    ),
 
-    # STACK
-    (
-        334,
-        command("./stack --list"),
-        TERM_COMMAND_CPS,
-        TERM_LINE_PAUSE
-    ),
-    (
-        369,
-        [
-            ("[+] languages", GREEN, True),
-            ("  " + PROFILE["languages"], TEXT, False),
-        ],
-        TERM_OUTPUT_CPS,
-        0.08
-    ),
-    (
-        399,
-        [
-            ("[+] web", GREEN, True),
-            ("        " + PROFILE["web"], TEXT, False),
-        ],
-        TERM_OUTPUT_CPS,
-        0.08
-    ),
-    (
-        429,
-        [
-            ("[+] ai/data", GREEN, True),
-            ("    " + PROFILE["ai_data"], TEXT, False),
-        ],
-        TERM_OUTPUT_CPS,
-        0.08
-    ),
-    (
-        459,
-        [
-            ("[+] tools", GREEN, True),
-            ("      " + PROFILE["tools"], TEXT, False),
-        ],
-        TERM_OUTPUT_CPS,
-        TERM_SECTION_PAUSE
-    ),
+def add_wrapped_plain_block(text, color=TEXT, bold=False, cps=TERM_OUTPUT_CPS,
+                            block_pause=TERM_SECTION_PAUSE):
+    lines = wrap_words(text, TERM_BOLD if bold else TERM_FONT, TERM_WRAP_WIDTH)
+    for i, line in enumerate(lines):
+        add_line(
+            simple_segments(line, color, bold),
+            cps,
+            0.03 if i < len(lines) - 1 else block_pause,
+            TERM_LINE_STEP if i < len(lines) - 1 else TERM_BLOCK_GAP
+        )
 
-    # CONTACT
-    (
-        510,
-        command("./contact --show"),
-        TERM_COMMAND_CPS,
-        TERM_LINE_PAUSE
-    ),
-    (
-        543,
-        output("mail     " + PROFILE["email"]),
-        TERM_OUTPUT_CPS,
-        0.08
-    ),
-    (
-        573,
-        output("linkedin " + PROFILE["linkedin"]),
-        TERM_OUTPUT_CPS,
-        TERM_SECTION_PAUSE
-    ),
 
-    # FINAL PROMPT
-    (
-        625,
-        [
-            ("rahym@github", GREEN, True),
-            (":", MUTED, False),
-            ("~", BLUE, True),
-            ("$ ", MUTED, False),
-        ],
-        TERM_COMMAND_CPS,
-        0.0
-    ),
-]
+def add_prefixed_block(prefix, content, prefix_color=GREEN, prefix_bold=True,
+                       content_color=TEXT, content_bold=False, cps=TERM_OUTPUT_CPS,
+                       block_pause=0.08, gap="  "):
+    lines = prefixed_wrapped_segments(
+        prefix=prefix,
+        content=content,
+        prefix_color=prefix_color,
+        prefix_bold=prefix_bold,
+        content_color=content_color,
+        content_bold=content_bold,
+        gap=gap
+    )
+
+    for i, line_segments in enumerate(lines):
+        add_line(
+            line_segments,
+            cps,
+            0.03 if i < len(lines) - 1 else block_pause,
+            TERM_LINE_STEP if i < len(lines) - 1 else TERM_LINE_STEP
+        )
+
+
+# Welcome
+add_line(
+    [("Welcome to Rahym's GitHub", GREEN, True)],
+    WELCOME_CPS,
+    0.35,
+    TERM_BLOCK_GAP
+)
+
+# whoami
+add_line(command_segments("whoami"), TERM_COMMAND_CPS, TERM_LINE_PAUSE, TERM_LINE_STEP)
+add_wrapped_plain_block(PROFILE["name"], color=GREEN, bold=True, cps=TERM_OUTPUT_CPS, block_pause=0.06)
+add_wrapped_plain_block(PROFILE["title"], color=BLUE, bold=False, cps=TERM_OUTPUT_CPS, block_pause=TERM_SECTION_PAUSE)
+
+# about
+add_line(command_segments("cat about.txt"), TERM_COMMAND_CPS, TERM_LINE_PAUSE, TERM_LINE_STEP)
+add_wrapped_plain_block(PROFILE["about"], color=TEXT, bold=False, cps=TERM_OUTPUT_CPS, block_pause=TERM_SECTION_PAUSE)
+
+# stack
+add_line(command_segments("./stack --list"), TERM_COMMAND_CPS, TERM_LINE_PAUSE, TERM_LINE_STEP)
+add_prefixed_block("[+] languages", PROFILE["languages"], gap="  ", block_pause=0.08)
+add_prefixed_block("[+] web", PROFILE["web"], gap="        ", block_pause=0.08)
+add_prefixed_block("[+] ai/data", PROFILE["ai_data"], gap="    ", block_pause=0.08)
+add_prefixed_block("[+] tools", PROFILE["tools"], gap="      ", block_pause=TERM_SECTION_PAUSE)
+
+# contact
+add_line(command_segments("./contact --show"), TERM_COMMAND_CPS, TERM_LINE_PAUSE, TERM_LINE_STEP)
+add_prefixed_block("mail", PROFILE["email"], prefix_color=TEXT, prefix_bold=False,
+                   content_color=TEXT, content_bold=False, gap="     ", block_pause=0.08)
+add_prefixed_block("linkedin", PROFILE["linkedin"], prefix_color=TEXT, prefix_bold=False,
+                   content_color=TEXT, content_bold=False, gap=" ", block_pause=TERM_SECTION_PAUSE)
+
+# final prompt
+add_line(
+    [
+        ("rahym@github", GREEN, True),
+        (":", MUTED, False),
+        ("~", BLUE, True),
+        ("$ ", MUTED, False),
+    ],
+    TERM_COMMAND_CPS,
+    0.0,
+    TERM_LINE_STEP
+)
 
 # =========================================================
-# CALCULATE ASCII TIMING
+# PLACE TERMINAL LINES VERTICALLY
+# =========================================================
+
+current_y = TERM_START_Y
+for line in visual_lines:
+    line["y"] = current_y
+    current_y += line["step_after"]
+
+# =========================================================
+# TIMING
 # =========================================================
 
 ascii_end = max(
@@ -416,36 +470,31 @@ ascii_end = max(
     for index, line in enumerate(ascii_lines)
 )
 
-# Start welcome slightly before ASCII fully completes
 SHELL_START = max(2.2, ascii_end - 0.8)
 
-# =========================================================
-# CALCULATE TERMINAL TIMELINE
-# =========================================================
-
-terminal_lines = []
+timeline_lines = []
 current_time = SHELL_START
 
-for y, segments, cps, pause in terminal_specs:
-    total_chars = char_count(segments)
-    end_time = current_time + total_chars / cps
+for line in visual_lines:
+    total_chars = sum(len(text) for text, _, _ in line["segments"])
+    end_time = current_time + total_chars / line["cps"]
 
-    terminal_lines.append({
-        "y": y,
-        "segments": segments,
-        "cps": cps,
+    timeline_lines.append({
+        "y": line["y"],
+        "segments": line["segments"],
+        "cps": line["cps"],
         "start": current_time,
         "end": end_time,
         "chars": total_chars,
     })
 
-    current_time = end_time + pause
+    current_time = end_time + line["pause_after"]
 
-ANIMATION_END = terminal_lines[-1]["end"]
+ANIMATION_END = timeline_lines[-1]["end"]
 TOTAL_TIME = ANIMATION_END + FINAL_HOLD
 
 # =========================================================
-# DRAW A PARTIALLY-TYPED TERMINAL LINE
+# DRAW PARTIALLY-TYPED LINE
 # =========================================================
 
 def draw_segments(draw, x, y, segments, visible_chars):
@@ -466,13 +515,10 @@ def draw_segments(draw, x, y, segments, visible_chars):
                 fill=color
             )
 
-        # Segment only partially typed
         if take < len(text):
             current_x += draw.textlength(partial, font=font)
-            remaining = 0
             break
 
-        # Entire segment visible
         current_x += draw.textlength(text, font=font)
         remaining -= len(text)
 
@@ -508,7 +554,7 @@ def render_frame(time_seconds):
     # TERMINAL TEXT
     active_cursor = None
 
-    for line in terminal_lines:
+    for line in timeline_lines:
         if time_seconds < line["start"]:
             continue
 
@@ -524,7 +570,6 @@ def render_frame(time_seconds):
             visible
         )
 
-        # Cursor follows currently typing line
         if line["start"] <= time_seconds < line["end"] and visible < line["chars"]:
             active_cursor = (end_x, line["y"])
 
@@ -532,13 +577,13 @@ def render_frame(time_seconds):
     if active_cursor:
         cursor_x, cursor_y = active_cursor
         draw.rectangle(
-            (cursor_x + 1, cursor_y + 3, cursor_x + 8, cursor_y + 20),
+            (cursor_x + 1, cursor_y + 4, cursor_x + 9, cursor_y + 23),
             fill=GREEN
         )
 
     # FINAL BLINKING CURSOR
     elif time_seconds >= ANIMATION_END:
-        final_line = terminal_lines[-1]
+        final_line = timeline_lines[-1]
 
         cursor_x = draw_segments(
             draw,
@@ -552,7 +597,7 @@ def render_frame(time_seconds):
 
         if cursor_visible:
             draw.rectangle(
-                (cursor_x + 1, final_line["y"] + 3, cursor_x + 8, final_line["y"] + 20),
+                (cursor_x + 1, final_line["y"] + 4, cursor_x + 9, final_line["y"] + 23),
                 fill=GREEN
             )
 
@@ -584,7 +629,6 @@ for frame_number in range(frame_count):
     current_time = frame_number / FPS
     frame = render_frame(current_time)
 
-    # Convert to shared GIF palette
     frame = frame.quantize(
         palette=palette_source,
         dither=Image.Dither.NONE
