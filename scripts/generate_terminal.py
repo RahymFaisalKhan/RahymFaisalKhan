@@ -1,613 +1,1165 @@
 from pathlib import Path
-from html import escape
+from PIL import Image, ImageDraw, ImageFont
+import math
+
+
+# =========================================================
+# PATHS
+# =========================================================
 
 ROOT = Path(__file__).resolve().parents[1]
 
 ASCII_FILE = ROOT / "assets" / "ascii-art.txt"
-OUTPUT_FILE = ROOT / "assets" / "terminal.svg"
+OUTPUT_FILE = ROOT / "assets" / "terminal.gif"
+
 
 # =========================================================
-# CANVAS / LAYOUT
+# CANVAS
 # =========================================================
 
 WIDTH = 1600
-HEIGHT = 760
+HEIGHT = 740
 
-# Left pane (ASCII)
+FPS = 18
+FRAME_MS = round(1000 / FPS)
+
+
+# =========================================================
+# ANIMATION SPEED
+# =========================================================
+
+#
+# ASCII art:
+#
+# Each line begins shortly after the line above it,
+# and every line reveals from left -> right.
+#
+# This gives a cascading "terminal printing" effect
+# without taking 60+ seconds to draw the whole image.
+#
+
+ASCII_START = 0.35
+
+# Characters typed per second on each ASCII line
+ASCII_CPS = 52.0
+
+# Delay before the next ASCII line begins typing
+ASCII_LINE_STAGGER = 0.045
+
+
+#
+# Right-side terminal
+#
+
+# Commands type slightly slower
+TERM_COMMAND_CPS = 34.0
+
+# Output types slightly faster
+TERM_OUTPUT_CPS = 58.0
+
+# Welcome message speed
+WELCOME_CPS = 30.0
+
+
+# Small pauses between lines
+TERM_LINE_PAUSE = 0.12
+
+# Larger pauses between sections
+TERM_SECTION_PAUSE = 0.22
+
+
+# How long finished terminal remains visible
+# before GIF restarts.
+FINAL_HOLD = 2.5
+
+
+# =========================================================
+# LAYOUT
+# =========================================================
+
 ART_X = 40
-ART_Y = 102
-ART_FONT = 7.6
-ART_LINE = 10.8
-ART_CHAR_W = 4.7
+ART_Y = 100
+ART_LINE_H = 11
 
-# Right pane (terminal text)
 RIGHT_X = 770
-RIGHT_Y = 118
-RIGHT_LINE = 42
-TERM_CHAR_W = 10.9
 
-DIVIDER_X = 736
 
 # =========================================================
-# TIMING
-# Tweak these if you want faster/slower typing
-# =========================================================
-
-BOOT_DELAY = 0.25
-
-# ASCII typing speed
-ASCII_CHAR_DELAY = 0.0014
-ASCII_LINE_PAUSE = 0.010
-
-# Terminal typing speed
-TERM_CHAR_DELAY = 0.014
-TERM_LINE_PAUSE = 0.18
-
-# Start right-side shell after this many seconds.
-# You can lower this if you want the shell to start earlier.
-MIN_SHELL_START = 2.30
-
-# =========================================================
-# EDIT YOUR PROFILE INFO HERE
+# PROFILE
 # =========================================================
 
 PROFILE = {
     "name": "Rahym Faisal Khan",
-    "title": "Software Development | Data Science | AI/ML",
-    "about": "Building software, exploring data, and learning intelligent systems.",
-    "languages": "Python  C++  C  Java  C#  JavaScript  TypeScript  Haskell",
-    "web": "React  Node.js  HTML  CSS",
-    "ai_data": "PyTorch  NumPy  Pandas  scikit-learn  LangChain  Hugging Face",
-    "tools": "Git  GitHub  Docker  VS Code",
-    "email": "rahymfaisal123@gmail.com",
-    "linkedin": "linkedin.com/in/rahym-faisal-633a6b2b4",
+
+    "title": (
+        "Software Development | Data Science | AI/ML"
+    ),
+
+    "about": (
+        "Building software, exploring data, "
+        "and learning intelligent systems."
+    ),
+
+    "languages": (
+        "Python  C++  C  Java  C#  "
+        "JavaScript  TypeScript  Haskell"
+    ),
+
+    "web": (
+        "React  Node.js  HTML  CSS"
+    ),
+
+    "ai_data": (
+        "PyTorch  NumPy  Pandas  scikit-learn  "
+        "LangChain  Hugging Face"
+    ),
+
+    "tools": (
+        "Git  GitHub  Docker  VS Code"
+    ),
+
+    "email": (
+        "rahymfaisal123@gmail.com"
+    ),
+
+    "linkedin": (
+        "linkedin.com/in/rahym-faisal-633a6b2b4"
+    ),
 }
 
+
 # =========================================================
-# READ ASCII ART
+# COLORS
 # =========================================================
 
-ascii_lines = ASCII_FILE.read_text(encoding="utf-8").splitlines()
+BG = "#000000"
+
+PANEL = "#020402"
+TOP_BAR = "#071107"
+
+BORDER = "#1f8f47"
+DIVIDER = "#10351b"
+
+GREEN = "#39d353"
+ASCII_GREEN = "#2fd65b"
+
+WHITE = "#f0f6fc"
+TEXT = "#d2d7de"
+BLUE = "#79c0ff"
+MUTED = "#6e7681"
+
+RED = "#ff5f56"
+YELLOW = "#ffbd2e"
+WINDOW_GREEN = "#27c93f"
+
+
+# =========================================================
+# LOAD FONTS
+# =========================================================
+
+def load_font(size, bold=False):
+
+    candidates = []
+
+    if bold:
+        candidates += [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation2/LiberationMono-Bold.ttf",
+            "/System/Library/Fonts/Monaco.ttf",
+            "C:/Windows/Fonts/consolab.ttf",
+        ]
+    else:
+        candidates += [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+            "/usr/share/fonts/truetype/liberation2/LiberationMono-Regular.ttf",
+            "/System/Library/Fonts/Monaco.ttf",
+            "C:/Windows/Fonts/consola.ttf",
+        ]
+
+    for path in candidates:
+        try:
+            return ImageFont.truetype(path, size)
+        except Exception:
+            pass
+
+    return ImageFont.load_default()
+
+
+ASCII_FONT = load_font(9)
+
+TERM_FONT = load_font(16)
+TERM_BOLD = load_font(16, bold=True)
+
+LABEL_FONT = load_font(15, bold=True)
+TITLE_FONT = load_font(15)
+
+
+# =========================================================
+# LOAD ASCII ART
+# =========================================================
+
+ascii_lines = ASCII_FILE.read_text(
+    encoding="utf-8"
+).replace(
+    "\t",
+    "    "
+).splitlines()
+
 
 if not ascii_lines:
-    ascii_lines = ["(ascii-art.txt is empty)"]
+    ascii_lines = [
+        "(ascii-art.txt is empty)"
+    ]
 
-# Replace tabs if they exist
-ascii_lines = [line.replace("\t", "    ") for line in ascii_lines]
 
 # =========================================================
-# HELPERS
+# CREATE STATIC TERMINAL BACKGROUND
 # =========================================================
 
-def svg_char(ch: str) -> str:
-    """Render spaces safely in SVG."""
-    if ch == " ":
-        return "&#160;"
-    return escape(ch)
+def make_base():
 
+    image = Image.new(
+        "RGB",
+        (WIDTH, HEIGHT),
+        BG
+    )
 
-def typed_plain_line(x, y, text, css_class, start_time, char_delay, char_width):
-    """
-    Render a single line character-by-character.
-    Returns: (svg_string, end_time)
-    """
-    pieces = [f'<g class="{css_class}">']
-    t = start_time
+    draw = ImageDraw.Draw(image)
 
-    for i, ch in enumerate(text):
-        char_x = x + i * char_width
-        pieces.append(
-            f'''
-            <text x="{char_x:.2f}" y="{y:.2f}" visibility="hidden">
-                {svg_char(ch)}
-                <set attributeName="visibility"
-                     to="visible"
-                     begin="{t:.3f}s"
-                     fill="freeze" />
-            </text>
-            '''
+    # -----------------------------------------------------
+    # OUTER TERMINAL
+    # -----------------------------------------------------
+
+    draw.rounded_rectangle(
+        (10, 10, 1590, 730),
+        radius=18,
+        fill=PANEL,
+        outline=BORDER,
+        width=2
+    )
+
+    # -----------------------------------------------------
+    # TITLE BAR
+    # -----------------------------------------------------
+
+    draw.rounded_rectangle(
+        (11, 11, 1589, 55),
+        radius=16,
+        fill=TOP_BAR
+    )
+
+    # Flatten bottom part of rounded title bar
+    draw.rectangle(
+        (11, 38, 1589, 55),
+        fill=TOP_BAR
+    )
+
+    # -----------------------------------------------------
+    # WINDOW BUTTONS
+    # -----------------------------------------------------
+
+    buttons = [
+        (34, RED),
+        (57, YELLOW),
+        (80, WINDOW_GREEN),
+    ]
+
+    for x, color in buttons:
+
+        draw.ellipse(
+            (
+                x - 7,
+                33 - 7,
+                x + 7,
+                33 + 7,
+            ),
+            fill=color
         )
-        t += char_delay
 
-    pieces.append("</g>")
-    return "\n".join(pieces), t
+    # -----------------------------------------------------
+    # WINDOW TITLE
+    # -----------------------------------------------------
+
+    title = "rahym@github: ~/profile"
+
+    title_width = draw.textlength(
+        title,
+        font=TITLE_FONT
+    )
+
+    draw.text(
+        (
+            (WIDTH - title_width) / 2,
+            23
+        ),
+        title,
+        font=TITLE_FONT,
+        fill=MUTED
+    )
+
+    # -----------------------------------------------------
+    # LEFT BLACK PANE
+    # -----------------------------------------------------
+
+    draw.rounded_rectangle(
+        (24, 56, 720, 716),
+        radius=10,
+        fill="#000000"
+    )
+
+    # -----------------------------------------------------
+    # RIGHT BLACK PANE
+    # -----------------------------------------------------
+
+    draw.rounded_rectangle(
+        (748, 56, 1564, 716),
+        radius=10,
+        fill="#010301"
+    )
+
+    # -----------------------------------------------------
+    # DIVIDER
+    # -----------------------------------------------------
+
+    draw.line(
+        (736, 55, 736, 716),
+        fill=DIVIDER,
+        width=1
+    )
+
+    # -----------------------------------------------------
+    # LABELS
+    # -----------------------------------------------------
+
+    draw.text(
+        (40, 70),
+        "[ ./ascii-art.txt ]",
+        font=LABEL_FONT,
+        fill=GREEN
+    )
+
+    draw.text(
+        (770, 70),
+        "[ interactive shell // guest session ]",
+        font=LABEL_FONT,
+        fill=GREEN
+    )
+
+    return image
 
 
-def typed_segment_line(x, y, segments, start_time, char_delay, char_width):
-    """
-    Render a line made of differently styled segments,
-    typed character-by-character from left to right.
+BASE_IMAGE = make_base()
 
-    segments: [("text", "css_class"), ...]
-    Returns: (svg_string, end_time)
-    """
-    pieces = []
-    t = start_time
-    cursor_index = 0
 
-    for segment_text, css_class in segments:
-        pieces.append(f'<g class="{css_class}">')
+# =========================================================
+# TERMINAL LINE HELPERS
+# =========================================================
 
-        for ch in segment_text:
-            char_x = x + cursor_index * char_width
-            pieces.append(
-                f'''
-                <text x="{char_x:.2f}" y="{y:.2f}" visibility="hidden">
-                    {svg_char(ch)}
-                    <set attributeName="visibility"
-                         to="visible"
-                         begin="{t:.3f}s"
-                         fill="freeze" />
-                </text>
-                '''
+def command(text):
+
+    return [
+        (
+            "rahym@github",
+            GREEN,
+            True
+        ),
+
+        (
+            ":",
+            MUTED,
+            False
+        ),
+
+        (
+            "~",
+            BLUE,
+            True
+        ),
+
+        (
+            "$ ",
+            MUTED,
+            False
+        ),
+
+        (
+            text,
+            WHITE,
+            False
+        ),
+    ]
+
+
+def output(text, color=TEXT, bold=False):
+
+    return [
+        (
+            text,
+            color,
+            bold
+        )
+    ]
+
+
+def char_count(segments):
+
+    return sum(
+        len(text)
+        for text, _, _ in segments
+    )
+
+
+# =========================================================
+# RIGHT SIDE CONTENT
+# =========================================================
+
+#
+# Format:
+#
+# (
+#     y position,
+#     text segments,
+#     characters per second,
+#     pause afterwards
+# )
+#
+
+terminal_specs = [
+
+    # -----------------------------------------------------
+    # WELCOME
+    # -----------------------------------------------------
+
+    (
+        108,
+
+        [
+            (
+                "Welcome to Rahym's GitHub",
+                GREEN,
+                True
             )
-            cursor_index += 1
-            t += char_delay
+        ],
 
-        pieces.append("</g>")
+        WELCOME_CPS,
 
-    return "\n".join(pieces), t
+        0.35
+    ),
 
+    # -----------------------------------------------------
+    # WHOAMI
+    # -----------------------------------------------------
 
-def static_text(x, y, text, css_class="label", anchor="start"):
-    anchor_attr = f' text-anchor="{anchor}"' if anchor != "start" else ""
-    return (
-        f'<text x="{x}" y="{y}" class="{css_class}"{anchor_attr}>'
-        f'{escape(text)}'
-        f'</text>'
-    )
+    (
+        150,
+        command("whoami"),
+        TERM_COMMAND_CPS,
+        TERM_LINE_PAUSE
+    ),
 
+    (
+        183,
+        output(
+            PROFILE["name"],
+            GREEN,
+            True
+        ),
+        TERM_OUTPUT_CPS,
+        0.08
+    ),
 
-# =========================================================
-# BUILD SVG
-# =========================================================
+    (
+        211,
+        output(
+            PROFILE["title"],
+            BLUE
+        ),
+        TERM_OUTPUT_CPS,
+        TERM_SECTION_PAUSE
+    ),
 
-svg = [f"""
-<svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="{WIDTH}"
-    height="{HEIGHT}"
-    viewBox="0 0 {WIDTH} {HEIGHT}"
-    role="img"
-    aria-labelledby="title desc"
->
-    <title id="title">Rahym Faisal Khan — Terminal Profile</title>
-    <desc id="desc">
-        Hacker-themed terminal GitHub profile with ASCII art on the left
-        and a typed shell session on the right.
-    </desc>
+    # -----------------------------------------------------
+    # ABOUT
+    # -----------------------------------------------------
 
-    <defs>
-        <pattern id="scanlines" width="4" height="4" patternUnits="userSpaceOnUse">
-            <rect width="4" height="2" fill="rgba(255,255,255,0.02)" />
-            <rect y="2" width="4" height="2" fill="rgba(0,0,0,0.00)" />
-        </pattern>
+    (
+        255,
+        command(
+            "cat about.txt"
+        ),
+        TERM_COMMAND_CPS,
+        TERM_LINE_PAUSE
+    ),
 
-        <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="1.2" result="blur"/>
-            <feMerge>
-                <feMergeNode in="blur"/>
-                <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-        </filter>
-    </defs>
+    (
+        288,
+        output(
+            PROFILE["about"]
+        ),
+        TERM_OUTPUT_CPS,
+        TERM_SECTION_PAUSE
+    ),
 
-    <style>
-        :root {{
-            color-scheme: dark;
-        }}
+    # -----------------------------------------------------
+    # STACK
+    # -----------------------------------------------------
 
-        .bg {{
-            fill: #000000;
-        }}
+    (
+        334,
+        command(
+            "./stack --list"
+        ),
+        TERM_COMMAND_CPS,
+        TERM_LINE_PAUSE
+    ),
 
-        .panel {{
-            fill: #020402;
-            stroke: #1f8f47;
-            stroke-width: 2;
-        }}
+    (
+        369,
 
-        .topbar {{
-            fill: #071107;
-        }}
+        [
+            (
+                "[+] languages",
+                GREEN,
+                True
+            ),
 
-        .pane-left {{
-            fill: #000000;
-        }}
+            (
+                "  " + PROFILE["languages"],
+                TEXT,
+                False
+            ),
+        ],
 
-        .pane-right {{
-            fill: #010301;
-        }}
+        TERM_OUTPUT_CPS,
 
-        .divider {{
-            stroke: #10351b;
-            stroke-width: 1;
-        }}
+        0.08
+    ),
 
-        .scan {{
-            fill: url(#scanlines);
-            opacity: 0.10;
-            pointer-events: none;
-        }}
+    (
+        399,
 
-        .ascii {{
-            fill: #2fd65b;
-            font-family:
-                "SFMono-Regular",
-                Consolas,
-                "Liberation Mono",
-                Menlo,
-                monospace;
-            font-size: {ART_FONT}px;
-            filter: url(#softGlow);
-        }}
+        [
+            (
+                "[+] web",
+                GREEN,
+                True
+            ),
 
-        .label {{
-            fill: #39d353;
-            font:
-                700 16px
-                "SFMono-Regular",
-                Consolas,
-                "Liberation Mono",
-                Menlo,
-                monospace;
-        }}
+            (
+                "        " + PROFILE["web"],
+                TEXT,
+                False
+            ),
+        ],
 
-        .prompt {{
-            fill: #39d353;
-            font:
-                700 20px
-                "SFMono-Regular",
-                Consolas,
-                "Liberation Mono",
-                Menlo,
-                monospace;
-            filter: url(#softGlow);
-        }}
+        TERM_OUTPUT_CPS,
 
-        .path {{
-            fill: #8b949e;
-            font:
-                700 20px
-                "SFMono-Regular",
-                Consolas,
-                "Liberation Mono",
-                Menlo,
-                monospace;
-        }}
+        0.08
+    ),
 
-        .command {{
-            fill: #f0f6fc;
-            font:
-                20px
-                "SFMono-Regular",
-                Consolas,
-                "Liberation Mono",
-                Menlo,
-                monospace;
-        }}
+    (
+        429,
 
-        .output {{
-            fill: #d2d7de;
-            font:
-                18px
-                "SFMono-Regular",
-                Consolas,
-                "Liberation Mono",
-                Menlo,
-                monospace;
-        }}
+        [
+            (
+                "[+] ai/data",
+                GREEN,
+                True
+            ),
 
-        .accent {{
-            fill: #39d353;
-            font:
-                700 18px
-                "SFMono-Regular",
-                Consolas,
-                "Liberation Mono",
-                Menlo,
-                monospace;
-            filter: url(#softGlow);
-        }}
+            (
+                "    " + PROFILE["ai_data"],
+                TEXT,
+                False
+            ),
+        ],
 
-        .cyan {{
-            fill: #79c0ff;
-            font:
-                18px
-                "SFMono-Regular",
-                Consolas,
-                "Liberation Mono",
-                Menlo,
-                monospace;
-        }}
+        TERM_OUTPUT_CPS,
 
-        .muted {{
-            fill: #6e7681;
-            font:
-                18px
-                "SFMono-Regular",
-                Consolas,
-                "Liberation Mono",
-                Menlo,
-                monospace;
-        }}
+        0.08
+    ),
 
-        .cursor {{
-            fill: #39d353;
-            font:
-                700 20px
-                "SFMono-Regular",
-                Consolas,
-                "Liberation Mono",
-                Menlo,
-                monospace;
-            filter: url(#softGlow);
-        }}
-    </style>
+    (
+        459,
 
-    <!-- OUTER BACKGROUND -->
-    <rect class="bg" width="100%" height="100%" rx="18" />
+        [
+            (
+                "[+] tools",
+                GREEN,
+                True
+            ),
 
-    <!-- TERMINAL WINDOW -->
-    <rect class="panel" x="10" y="10" width="1580" height="740" rx="18" />
+            (
+                "      " + PROFILE["tools"],
+                TEXT,
+                False
+            ),
+        ],
 
-    <!-- TITLE BAR -->
-    <rect class="topbar" x="11" y="11" width="1578" height="44" rx="16" />
-    <rect class="topbar" x="11" y="38" width="1578" height="17" />
+        TERM_OUTPUT_CPS,
 
-    <!-- WINDOW BUTTONS -->
-    <circle cx="34" cy="33" r="7" fill="#ff5f56" />
-    <circle cx="57" cy="33" r="7" fill="#ffbd2e" />
-    <circle cx="80" cy="33" r="7" fill="#27c93f" />
+        TERM_SECTION_PAUSE
+    ),
 
-    <!-- WINDOW TITLE -->
-    {static_text(WIDTH / 2, 38, "rahym@github: ~/profile", "muted", "middle")}
+    # -----------------------------------------------------
+    # CONTACT
+    # -----------------------------------------------------
 
-    <!-- INNER PANES -->
-    <rect class="pane-left"  x="24"  y="56" width="696" height="680" rx="10" />
-    <rect class="pane-right" x="748" y="56" width="816" height="680" rx="10" />
+    (
+        510,
 
-    <!-- DIVIDER -->
-    <line x1="{DIVIDER_X}" y1="55" x2="{DIVIDER_X}" y2="736" class="divider" />
+        command(
+            "./contact --show"
+        ),
 
-    <!-- PANE LABELS -->
-    {static_text(40, 76, "[ ./ascii-art.txt ]", "label")}
-    {static_text(770, 76, "[ interactive shell // guest session ]", "label")}
-"""]
+        TERM_COMMAND_CPS,
 
-# =========================================================
-# TYPE THE ASCII ART
-# =========================================================
+        TERM_LINE_PAUSE
+    ),
 
-ascii_time = BOOT_DELAY
+    (
+        543,
 
-for index, line in enumerate(ascii_lines):
-    y = ART_Y + index * ART_LINE
-    line_svg, ascii_time = typed_plain_line(
-        ART_X,
-        y,
-        line,
-        "ascii",
-        ascii_time,
-        ASCII_CHAR_DELAY,
-        ART_CHAR_W,
-    )
-    svg.append(line_svg)
-    ascii_time += ASCII_LINE_PAUSE
+        output(
+            "mail     "
+            + PROFILE["email"]
+        ),
 
-# =========================================================
-# TYPE THE RIGHT-SIDE TERMINAL
-# =========================================================
+        TERM_OUTPUT_CPS,
 
-t = max(MIN_SHELL_START, ascii_time + 0.18)
-y = RIGHT_Y
+        0.08
+    ),
 
-# 1) whoami
-line_svg, t = typed_segment_line(
-    RIGHT_X, y,
-    [
-        ("rahym@github", "prompt"),
-        (":", "muted"),
-        ("~", "path"),
-        ("$ ", "muted"),
-        ("whoami", "command"),
-    ],
-    t,
-    TERM_CHAR_DELAY,
-    TERM_CHAR_W,
-)
-svg.append(line_svg)
-t += TERM_LINE_PAUSE
-y += RIGHT_LINE
+    (
+        573,
 
-line_svg, t = typed_plain_line(
-    RIGHT_X, y,
-    PROFILE["name"],
-    "accent",
-    t,
-    TERM_CHAR_DELAY,
-    TERM_CHAR_W,
-)
-svg.append(line_svg)
-t += TERM_LINE_PAUSE * 0.75
-y += 28
+        output(
+            "linkedin "
+            + PROFILE["linkedin"]
+        ),
 
-line_svg, t = typed_plain_line(
-    RIGHT_X, y,
-    PROFILE["title"],
-    "cyan",
-    t,
-    TERM_CHAR_DELAY,
-    TERM_CHAR_W,
-)
-svg.append(line_svg)
-t += TERM_LINE_PAUSE * 1.2
-y += 50
+        TERM_OUTPUT_CPS,
 
-# 2) about
-line_svg, t = typed_segment_line(
-    RIGHT_X, y,
-    [
-        ("rahym@github", "prompt"),
-        (":", "muted"),
-        ("~", "path"),
-        ("$ ", "muted"),
-        ("cat about.txt", "command"),
-    ],
-    t,
-    TERM_CHAR_DELAY,
-    TERM_CHAR_W,
-)
-svg.append(line_svg)
-t += TERM_LINE_PAUSE
-y += RIGHT_LINE
+        TERM_SECTION_PAUSE
+    ),
 
-line_svg, t = typed_plain_line(
-    RIGHT_X, y,
-    PROFILE["about"],
-    "output",
-    t,
-    TERM_CHAR_DELAY,
-    TERM_CHAR_W,
-)
-svg.append(line_svg)
-t += TERM_LINE_PAUSE * 1.2
-y += 52
+    # -----------------------------------------------------
+    # FINAL PROMPT
+    # -----------------------------------------------------
 
-# 3) stack
-line_svg, t = typed_segment_line(
-    RIGHT_X, y,
-    [
-        ("rahym@github", "prompt"),
-        (":", "muted"),
-        ("~", "path"),
-        ("$ ", "muted"),
-        ("./stack --list", "command"),
-    ],
-    t,
-    TERM_CHAR_DELAY,
-    TERM_CHAR_W,
-)
-svg.append(line_svg)
-t += TERM_LINE_PAUSE
-y += RIGHT_LINE
+    (
+        625,
 
-stack_lines = [
-    (f"[+] languages  {PROFILE['languages']}", [("[+] languages", "accent"), ("  " + PROFILE["languages"], "output")]),
-    (f"[+] web        {PROFILE['web']}", [("[+] web", "accent"), ("        " + PROFILE["web"], "output")]),
-    (f"[+] ai/data    {PROFILE['ai_data']}", [("[+] ai/data", "accent"), ("    " + PROFILE["ai_data"], "output")]),
-    (f"[+] tools      {PROFILE['tools']}", [("[+] tools", "accent"), ("      " + PROFILE["tools"], "output")]),
+        [
+            (
+                "rahym@github",
+                GREEN,
+                True
+            ),
+
+            (
+                ":",
+                MUTED,
+                False
+            ),
+
+            (
+                "~",
+                BLUE,
+                True
+            ),
+
+            (
+                "$ ",
+                MUTED,
+                False
+            ),
+        ],
+
+        TERM_COMMAND_CPS,
+
+        0.0
+    ),
 ]
 
-for _, segments in stack_lines:
-    line_svg, t = typed_segment_line(
-        RIGHT_X, y,
-        segments,
-        t,
-        TERM_CHAR_DELAY,
-        TERM_CHAR_W,
+
+# =========================================================
+# CALCULATE ASCII TIMING
+# =========================================================
+
+ascii_end = max(
+
+    ASCII_START
+    + index * ASCII_LINE_STAGGER
+    + (
+        len(line)
+        / ASCII_CPS
+        if line
+        else 0
     )
-    svg.append(line_svg)
-    t += TERM_LINE_PAUSE * 0.65
-    y += 32
 
-y += 14
-t += 0.08
-
-# 4) contact
-line_svg, t = typed_segment_line(
-    RIGHT_X, y,
-    [
-        ("rahym@github", "prompt"),
-        (":", "muted"),
-        ("~", "path"),
-        ("$ ", "muted"),
-        ("./contact --show", "command"),
-    ],
-    t,
-    TERM_CHAR_DELAY,
-    TERM_CHAR_W,
+    for index, line
+    in enumerate(ascii_lines)
 )
-svg.append(line_svg)
-t += TERM_LINE_PAUSE
-y += RIGHT_LINE
 
-line_svg, t = typed_plain_line(
-    RIGHT_X, y,
-    f"mail     {PROFILE['email']}",
-    "output",
-    t,
-    TERM_CHAR_DELAY,
-    TERM_CHAR_W,
+
+# Start welcome slightly BEFORE ASCII fully completes.
+#
+# This creates a nice overlap:
+#
+# ASCII still finishing
+#         +
+# "Welcome to Rahym's GitHub" starts typing
+#
+
+SHELL_START = max(
+    2.2,
+    ascii_end - 0.8
 )
-svg.append(line_svg)
-t += TERM_LINE_PAUSE * 0.70
-y += 32
 
-line_svg, t = typed_plain_line(
-    RIGHT_X, y,
-    f"linkedin {PROFILE['linkedin']}",
-    "output",
-    t,
-    TERM_CHAR_DELAY,
-    TERM_CHAR_W,
-)
-svg.append(line_svg)
-t += TERM_LINE_PAUSE
-y += 52
-
-# 5) final prompt
-line_svg, t = typed_segment_line(
-    RIGHT_X, y,
-    [
-        ("rahym@github", "prompt"),
-        (":", "muted"),
-        ("~", "path"),
-        ("$ ", "muted"),
-    ],
-    t,
-    TERM_CHAR_DELAY,
-    TERM_CHAR_W,
-)
-svg.append(line_svg)
-
-cursor_x = RIGHT_X + len("rahym@github:~$ ") * TERM_CHAR_W
-
-svg.append(
-    f"""
-    <text x="{cursor_x:.2f}" y="{y:.2f}" class="cursor" visibility="hidden">
-        █
-        <set attributeName="visibility"
-             to="visible"
-             begin="{t:.3f}s"
-             fill="freeze" />
-        <animate attributeName="opacity"
-                 values="1;1;0;0;1"
-                 keyTimes="0;0.48;0.49;1;1"
-                 dur="1s"
-                 repeatCount="indefinite"
-                 begin="{t:.3f}s" />
-    </text>
-    """
-)
 
 # =========================================================
-# SCANLINE OVERLAY
+# CALCULATE TERMINAL TIMELINE
 # =========================================================
 
-svg.append(
-    """
-    <rect class="scan" x="24" y="56" width="1540" height="680" rx="10" />
-    """
+terminal_lines = []
+
+current_time = SHELL_START
+
+
+for (
+    y,
+    segments,
+    cps,
+    pause
+) in terminal_specs:
+
+    total_chars = char_count(
+        segments
+    )
+
+    end_time = (
+        current_time
+        + total_chars / cps
+    )
+
+    terminal_lines.append({
+
+        "y": y,
+
+        "segments": segments,
+
+        "cps": cps,
+
+        "start": current_time,
+
+        "end": end_time,
+
+        "chars": total_chars,
+    })
+
+    current_time = (
+        end_time
+        + pause
+    )
+
+
+ANIMATION_END = (
+    terminal_lines[-1]["end"]
 )
 
-svg.append("</svg>")
+TOTAL_TIME = (
+    ANIMATION_END
+    + FINAL_HOLD
+)
+
 
 # =========================================================
-# WRITE FILE
+# DRAW A PARTIALLY-TYPED TERMINAL LINE
 # =========================================================
 
-OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-OUTPUT_FILE.write_text("\n".join(svg), encoding="utf-8")
+def draw_segments(
+    draw,
+    x,
+    y,
+    segments,
+    visible_chars
+):
 
-print(f"Generated: {OUTPUT_FILE}")
+    current_x = x
+    remaining = visible_chars
+
+    for (
+        text,
+        color,
+        bold
+    ) in segments:
+
+        font = (
+            TERM_BOLD
+            if bold
+            else TERM_FONT
+        )
+
+        take = max(
+            0,
+            min(
+                len(text),
+                remaining
+            )
+        )
+
+        partial = text[:take]
+
+        if partial:
+
+            draw.text(
+                (
+                    current_x,
+                    y
+                ),
+                partial,
+                font=font,
+                fill=color
+            )
+
+        # -------------------------------------------------
+        # Segment only partially typed
+        # -------------------------------------------------
+
+        if take < len(text):
+
+            current_x += draw.textlength(
+                partial,
+                font=font
+            )
+
+            remaining = 0
+            break
+
+        # -------------------------------------------------
+        # Entire segment visible
+        # -------------------------------------------------
+
+        current_x += draw.textlength(
+            text,
+            font=font
+        )
+
+        remaining -= len(text)
+
+    return current_x
+
+
+# =========================================================
+# RENDER ONE FRAME
+# =========================================================
+
+def render_frame(time_seconds):
+
+    image = BASE_IMAGE.copy()
+
+    draw = ImageDraw.Draw(
+        image
+    )
+
+    # =====================================================
+    # ASCII ART
+    # =====================================================
+
+    for index, line in enumerate(
+        ascii_lines
+    ):
+
+        line_start = (
+            ASCII_START
+            + index
+            * ASCII_LINE_STAGGER
+        )
+
+        if time_seconds < line_start:
+            continue
+
+        elapsed = (
+            time_seconds
+            - line_start
+        )
+
+        visible = int(
+            elapsed
+            * ASCII_CPS
+        ) + 1
+
+        visible = min(
+            len(line),
+            max(
+                0,
+                visible
+            )
+        )
+
+        if visible:
+
+            draw.text(
+                (
+                    ART_X,
+                    ART_Y
+                    + index
+                    * ART_LINE_H
+                ),
+                line[:visible],
+                font=ASCII_FONT,
+                fill=ASCII_GREEN
+            )
+
+    # =====================================================
+    # TERMINAL TEXT
+    # =====================================================
+
+    active_cursor = None
+
+    for line in terminal_lines:
+
+        if (
+            time_seconds
+            < line["start"]
+        ):
+            continue
+
+        elapsed = (
+            time_seconds
+            - line["start"]
+        )
+
+        visible = int(
+            elapsed
+            * line["cps"]
+        ) + 1
+
+        visible = min(
+            line["chars"],
+            max(
+                0,
+                visible
+            )
+        )
+
+        end_x = draw_segments(
+            draw,
+            RIGHT_X,
+            line["y"],
+            line["segments"],
+            visible
+        )
+
+        # Cursor follows currently typing line
+        if (
+            line["start"]
+            <= time_seconds
+            < line["end"]
+            and visible
+            < line["chars"]
+        ):
+
+            active_cursor = (
+                end_x,
+                line["y"]
+            )
+
+    # =====================================================
+    # ACTIVE TYPING CURSOR
+    # =====================================================
+
+    if active_cursor:
+
+        cursor_x, cursor_y = (
+            active_cursor
+        )
+
+        draw.rectangle(
+            (
+                cursor_x + 1,
+                cursor_y + 3,
+                cursor_x + 8,
+                cursor_y + 20,
+            ),
+            fill=GREEN
+        )
+
+    # =====================================================
+    # FINAL BLINKING CURSOR
+    # =====================================================
+
+    elif (
+        time_seconds
+        >= ANIMATION_END
+    ):
+
+        final_line = (
+            terminal_lines[-1]
+        )
+
+        cursor_x = draw_segments(
+            draw,
+            RIGHT_X,
+            final_line["y"],
+            final_line["segments"],
+            final_line["chars"]
+        )
+
+        #
+        # Blink twice every second.
+        #
+
+        cursor_visible = (
+            int(
+                (
+                    time_seconds
+                    - ANIMATION_END
+                )
+                * 2
+            )
+            % 2
+            == 0
+        )
+
+        if cursor_visible:
+
+            draw.rectangle(
+                (
+                    cursor_x + 1,
+                    final_line["y"] + 3,
+                    cursor_x + 8,
+                    final_line["y"] + 20,
+                ),
+                fill=GREEN
+            )
+
+    return image
+
+
+# =========================================================
+# BUILD GIF PALETTE
+# =========================================================
+
+#
+# Using a shared palette keeps the GIF dramatically smaller
+# and prevents colors from flickering between frames.
+#
+
+palette_source = render_frame(
+    ANIMATION_END
+).quantize(
+    colors=64,
+    method=Image.Quantize.MEDIANCUT
+)
+
+
+# =========================================================
+# GENERATE FRAMES
+# =========================================================
+
+frame_count = (
+    math.ceil(
+        TOTAL_TIME
+        * FPS
+    )
+    + 1
+)
+
+
+frames = []
+
+
+print()
+print(
+    "Generating animated terminal..."
+)
+print(
+    f"Frames: {frame_count}"
+)
+print(
+    f"Duration: {TOTAL_TIME:.1f}s"
+)
+print()
+
+
+for frame_number in range(
+    frame_count
+):
+
+    current_time = (
+        frame_number
+        / FPS
+    )
+
+    frame = render_frame(
+        current_time
+    )
+
+    # Convert to shared GIF palette
+    frame = frame.quantize(
+        palette=palette_source,
+        dither=Image.Dither.NONE
+    )
+
+    frames.append(
+        frame
+    )
+
+    if (
+        frame_number % 50
+        == 0
+    ):
+
+        print(
+            f"{frame_number}"
+            f"/{frame_count}"
+        )
+
+
+# =========================================================
+# SAVE GIF
+# =========================================================
+
+OUTPUT_FILE.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+
+frames[0].save(
+
+    OUTPUT_FILE,
+
+    save_all=True,
+
+    append_images=(
+        frames[1:]
+    ),
+
+    duration=FRAME_MS,
+
+    loop=0,
+
+    optimize=True,
+
+    disposal=1
+)
+
+
+size_mb = (
+    OUTPUT_FILE.stat().st_size
+    / 1024
+    / 1024
+)
+
+
+print()
+print(
+    f"Generated: {OUTPUT_FILE}"
+)
+print(
+    f"Size: {size_mb:.2f} MB"
+)
+print()
